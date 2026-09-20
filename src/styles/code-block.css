@@ -1,0 +1,282 @@
+/**
+ * 代码块外观 —— 对齐 Firefly（Astro 版）的观感。
+ *
+ * 注：行号由 Shiki 插件在 Shadow DOM 里用 CSS 计数器自绘（`code .line::before`），
+ * 主题这边不再自己旁挂一列 —— 那样会出现两份行号，而且插件是逐行计数、
+ * 旁挂列在代码折行时会错位。
+ *
+ * 分工：
+ *   · 语法高亮由 Shiki 插件负责（Shadow DOM 内渲染，外部改不了它的内联色）
+ *   · 外框（标题栏圆点、语言徽章、复制按钮、行号、折叠）由 code-block.js 构建，
+ *     本文件负责样式
+ *
+ * 所以这里不碰 token 颜色：底色与前景色都来自 Shiki 主题本身
+ * （one-light #FAFAFA / one-dark-pro #282C34），主题只提供外框配色。
+ * 未安装 Shiki 插件时页面上是裸 <pre><code>，脚本套同一个外框，
+ * 此时用 --code-fallback-fg 兜底文字色。
+ */
+
+/* ── 外框 ── */
+
+.custom-md .code-frame {
+  position: relative;
+  margin: 1.25rem 0;
+  border-radius: 0.85rem;
+  background-color: var(--code-body-bg);
+  /* 对齐 Firefly 的 expressive-code 阴影：0.1rem 0.1rem 0.2rem #00000028 */
+  box-shadow: 0.1rem 0.1rem 0.2rem rgb(0 0 0 / 0.16);
+  overflow: hidden;
+}
+
+/* 裸 pre（无 Shiki 插件）兜底：没有内联底色，用主题变量补 */
+.custom-md .code-frame .code-body > pre {
+  margin: 0;
+  background-color: var(--code-body-bg);
+  color: var(--code-fallback-fg);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+  tab-size: 2;
+}
+
+/* Shiki 插件的自定义元素自带
+     :host { display: block; margin: 1rem 0 !important; }
+   这条规则在 Shadow DOM 内且是 !important —— 按级联规则，important 声明由内部
+   （Shadow）胜出，外部无论怎么写都覆盖不掉（连内联 !important 也不行）。
+
+   所以不要试图消掉它，而是把它当成既定偏移：插件渲染的正文比外框顶低 1rem，
+   下面徽章与复制按钮用同一个偏移对齐，才能盖住插件那枚自带的纯文字徽章。 */
+.custom-md .code-frame shiki-code {
+  display: block;
+}
+
+.code-frame {
+  --code-shiki-host-margin: 1rem;
+}
+
+/* ── 标题栏（三个圆点） ──
+   Firefly 的 terminal 框标题栏：圆点用同一前景色低透明度，不做红黄绿。
+   one-dark-pro 下标题栏与正文同色，分隔只靠这排圆点。 */
+.code-header {
+  display: flex;
+  align-items: center;
+  height: 2.125rem;
+  padding: 0 1rem;
+  background-color: var(--code-header-bg);
+}
+
+.code-dots {
+  display: flex;
+  gap: 0.34rem;
+}
+
+.code-dot {
+  width: 0.56rem;
+  height: 0.56rem;
+  border-radius: 9999px;
+  background-color: var(--code-dot);
+  opacity: 0.15;
+}
+
+/* ── 正文区 ── */
+
+.code-main {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.code-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  /* 抵消 Shiki 的 :host 在底部留的那 1rem —— 它让插件渲染的正文框比外框底边
+     高出一截，连同 .group 自带的投影，在块底部形成两条相邻的横线。
+     用等量负外边距把正文底边拉回与外框底边重合，投影随即被外框的
+     overflow:hidden 裁掉。顶部那 1rem 保留，正好当标题栏与正文之间的呼吸空间。 */
+  margin-bottom: calc(-1 * var(--code-shiki-host-margin, 1rem));
+}
+
+/* ── 右上角控件槽 ──
+   这一小块区域必须**常驻不透明**。Shiki 插件在 Shadow DOM 里既有自己的纯文字徽章、
+   又有一个 `.group:hover` 才现形的 32×32 复制按钮，两者都无法从外部删除或改样式；
+   而主题这边只要「徽章淡出」的触发条件比插件的 `.group:hover` 宽（例如鼠标停在
+   标题栏上），插件那枚徽章就会露出来 —— 这正是「悬停时冒出语言文字」的原因。
+
+   解法是让遮罩与内容分离：槽位本身永远不透明、永远盖住那块区域，槽位内部才做
+   徽章 ↔ 复制按钮的交换。这样无论鼠标走哪条路径，插件的徽章和按钮都露不出来。
+
+   几何按插件的实际尺寸取（相对 .code-main 顶边）：
+     插件徽章   top 1.25rem，右 0.5rem，约 54×16
+     插件按钮   top 1.5rem， 右 0.5rem，32×32
+   槽位取二者并集并留出余量。 */
+.code-slot {
+  position: absolute;
+  top: calc(var(--code-shiki-host-margin, 1rem) + 0.25rem);
+  right: 0.5rem;
+  z-index: 2;
+  width: 5.5rem;
+  height: 2.25rem;
+  background-color: var(--code-body-bg);
+}
+
+/* ── 语言徽章 ── */
+.code-language {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.1rem 0.5rem;
+  border-radius: 0.25rem;
+  background-color: var(--btn-regular-bg);
+  color: var(--btn-content);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.15s ease-out;
+}
+
+/* ── 复制按钮 ──
+   与徽章同一个槽位：默认只露徽章，悬停或键盘聚焦时按钮出现、徽章让位。
+   尺寸取 2rem 是为了与插件的 32×32 对齐，保证槽位内不留缝 */
+.code-copy {
+  position: absolute;
+  top: 0.25rem;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--line-color);
+  border-radius: 0.5rem;
+  background-color: var(--btn-regular-bg);
+  color: var(--btn-content);
+  opacity: 0;
+  cursor: pointer;
+  transition:
+    opacity 0.15s ease-out,
+    background-color 0.15s ease-out;
+}
+
+.code-frame:hover .code-copy,
+.code-copy:focus-visible {
+  opacity: 1;
+}
+
+/* 按钮显形时收起徽章，避免两枚元素叠在一起 */
+.code-frame:hover .code-language,
+.code-frame:focus-within .code-language {
+  opacity: 0;
+}
+
+.code-copy:hover {
+  background-color: var(--btn-regular-bg-hover);
+}
+
+.code-copy:active {
+  background-color: var(--btn-regular-bg-active);
+}
+
+.code-copy:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* 复制成功：切到主题色给出明确反馈 */
+.code-copy.is-copied {
+  border-color: transparent;
+  background-color: var(--primary);
+  color: white;
+}
+
+:root.dark .code-copy.is-copied {
+  color: rgb(0 0 0 / 0.7);
+}
+
+.code-copy .code-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* 触屏没有 hover：点一下代码块才让按钮显形，避免手指误触 */
+@media (hover: none) {
+  .code-copy {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .code-frame.is-touched .code-copy {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .code-frame.is-touched .code-language {
+    opacity: 0;
+  }
+}
+
+/* ── 长块折叠 ── */
+
+.code-frame.is-collapsible .code-main {
+  overflow: hidden;
+  max-height: var(--code-collapsed-height);
+}
+
+.code-frame.is-collapsible.is-expanded .code-main {
+  max-height: none;
+}
+
+/* 折叠遮罩：颜色取自代码块自身底色，避免底部糊出一条异色 */
+.code-frame.is-collapsible:not(.is-expanded) .code-main::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4.5rem;
+  background: linear-gradient(to bottom, transparent, var(--code-body-bg));
+  pointer-events: none;
+}
+
+.code-expand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.5rem;
+  border: 0;
+  border-top: 1px solid var(--line-divider);
+  background-color: var(--code-header-bg);
+  color: var(--btn-content);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease-out;
+}
+
+.code-expand:hover {
+  background-color: var(--btn-regular-bg);
+}
+
+.code-expand:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* ── 壁纸透明模式下卡片是半透明磨砂，实心底会显突兀 ── */
+
+body.wallpaper-transparent .custom-md .code-frame {
+  background-color: var(--card-bg-transparent, var(--code-body-bg));
+}
+
+/* ── 尊重系统的减少动效偏好 ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .code-copy,
+  .code-language {
+    transition-duration: 1ms;
+  }
+}

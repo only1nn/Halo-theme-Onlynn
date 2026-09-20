@@ -1,0 +1,37 @@
+apiVersion: theme.halo.run/v1alpha1
+kind: Theme
+metadata:
+  name: onlynn
+spec:
+  displayName: Onlynn
+  author:
+    name: nn在发呆
+  description: 一款为 Halo 打造的卡片式博客主题，以 Ethereal 为基础，按 Firefly 的美学补齐外观与交互定制能力。
+  logo: /themes/onlynn/assets/images/favicon-light-192.png
+  homepage: https://github.com/only1nn/halo-theme-Onlynn#readme
+  repo: https://github.com/only1nn/halo-theme-Onlynn
+  issues: https://github.com/only1nn/halo-theme-Onlynn/issues
+  customTemplates:
+    page:
+      - name: "RSS 订阅"
+        description: "RSS 订阅页：订阅地址 + 最新文章 + RSS 说明"
+        file: "rss.html"
+      - name: "朋友圈"
+        description: "朋友圈动态页面"
+        file: "friends.html"
+      - name: "心愿便签"
+        description: "心愿墙 + 树洞便签墙页面（需安装心愿便签插件）"
+        file: "wishes.html"
+      - name: "时间轴"
+        description: "个人成长历程时间轴页面（在主题设置的「时间轴」Tab 中配置数据）"
+        file: "timeline.html"
+      - name: "技能"
+        description: "个人技能展示页面（在主题设置的「技能」Tab 中配置数据）"
+        file: "skills.html"
+  settingName: "onlynn-setting"
+  configMapName: "onlynn-configmap"
+  version: "1.2.4"
+  requires: ">=2.25.0"
+  license:
+    - name: "MIT"
+      url: "https://github.com/only1nn/halo-theme-Onlynn/blob/master/LICENSE"

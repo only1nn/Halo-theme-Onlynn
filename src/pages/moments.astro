@@ -1,0 +1,208 @@
+---
+import Pagination from "../components/control/Pagination.astro";
+import FilterTabs from "../components/control/FilterTabs.astro";
+import PageHeader from "../components/control/PageHeader.astro";
+import MomentMedia from "../components/MomentMedia.astro";
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+const basePath = import.meta.env.BASE_URL.replace(/\/+$/, "");
+// ASSET_VERSION 由 astro.config.mjs 构建期从 theme.yaml 注入（vite.define）
+declare const ASSET_VERSION: string;
+
+---
+
+<MainGridLayout
+  title="${title + ' - ' + site.title}"
+  description="${title + ' - ' + site.title}"
+>
+  <!-- 页面 <title> 由 Layout.astro 统一输出，此处不再重复定义 -->
+  <section
+    class="card-base onload-animation mb-4 overflow-hidden px-6 py-6 md:px-9"
+  >
+    <PageHeader
+      containerClass="mb-5 flex flex-col items-start gap-3 md:flex-row md:items-end md:justify-between"
+      titleExpr="${title}"
+      title="瞬间"
+      iconClass="icon-[material-symbols--update-rounded]"
+      labelExpr="#{page.moments.subtitle}"
+      label="我的动态"
+      subExpr="#{page.moments.subtitleCount(${moments.total})}"
+      sub="共 0 条动态"
+      filteredExpr="${not #lists.isEmpty(param.tag)}"
+    >
+      <a
+        th:href="@{/moments/rss.xml}"
+        data-no-swup
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-regular group h-11 w-fit rounded-xl px-4 text-sm font-bold active:scale-95"
+        slot="right"
+      >
+        <span
+          class="icon-[material-symbols--rss-feed-rounded] mr-1.5 text-base transition-transform group-hover:scale-110"
+        ></span>
+        <span>RSS</span>
+      </a>
+    </PageHeader>
+
+    <FilterTabs
+      showIfExpr="${not #lists.isEmpty(tags)}"
+      class="mb-5 flex flex-wrap gap-2"
+      allHrefExpr="@{/moments}"
+      allActiveExpr="#lists.isEmpty(param.tag)"
+      eachExpr="tag : ${tags}"
+      tabTemplate={{
+        hrefExpr: "@{/moments(tag=${tag.name})}",
+        activeExpr: "#lists.contains(param.tag, tag.name)",
+        labelExpr: "${tag.name}",
+        countExpr: "${tag.momentCount}",
+      }}
+    />
+
+    <div th:if="${not #lists.isEmpty(moments.items)}" class="moment-list">
+      <article
+        th:each="moment, momentStat : ${moments.items}"
+        th:with="content=${moment.spec.content}"
+        class="card-base btn-card-outline mb-4 rounded-xl p-5 onload-animation card-hover-lift relative"
+        th:style="|animation-delay: min(calc(var(--content-delay) + ${momentStat.index} * var(--dur-entry-step)), var(--dur-entry-max, 400ms))|"
+      >
+        <span
+          aria-hidden="true"
+          class="icon-[material-symbols--format-quote-rounded] pointer-events-none absolute right-5 top-4 text-[2.5rem] leading-none text-(--primary)/15 transition"
+        ></span>
+        <div class="flex items-start gap-4">
+          <div class="shrink-0">
+            <img
+              alt=""
+              th:if="${moment.owner != null and not #strings.isEmpty(moment.owner.avatar)}"
+              th:src="${moment.owner.avatar}"
+              th:alt="${moment.owner.displayName}"
+              class="h-13 w-13 rounded-xl object-cover bg-(--btn-regular-bg)"
+            />
+          </div>
+          <div
+            th:unless="${moment.owner != null and not #strings.isEmpty(moment.owner.avatar)}"
+            class="flex h-13 w-13 shrink-0 items-center justify-center rounded-xl bg-(--btn-regular-bg) text-(--primary)"
+          >
+            <span class="icon-[material-symbols--account-circle] text-3xl"
+            ></span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex min-w-0 items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div
+                  class="truncate text-base font-bold text-(--primary)"
+                  th:text="${moment.owner != null ? moment.owner.displayName : #messages.msg('page.moments.title')}"
+                >
+                  Ethereal
+                </div>
+                <time
+                  class="mt-0.5 block text-sm text-50"
+                  th:datetime="${moment.spec.releaseTime}"
+                  th:text="${moment.spec.releaseTime != null ? #dates.format(moment.spec.releaseTime, 'MM-dd') : ''}"
+                  >04-25</time
+                >
+              </div>
+            </div>
+
+            <div
+              th:if="${content != null and not #strings.isEmpty(content.html)}"
+              class="moment-feed-content custom-md markdown-content prose prose-base mt-4 max-w-none! text-75 dark:prose-invert!"
+              th:utext="${content.html}"
+            >
+            </div>
+
+            <MomentMedia />
+
+            <div
+              th:if="${not #lists.isEmpty(moment.spec.tags)}"
+              class="mt-4 flex flex-wrap gap-x-2 gap-y-1 text-base"
+            >
+              <a
+                th:each="tagName : ${moment.spec.tags}"
+                th:href="@{/moments(tag=${tagName})}"
+                class="link font-medium text-(--primary)"
+                th:text="${'#' + tagName}">#Tag</a
+              >
+            </div>
+
+            <div class="mt-4 flex flex-wrap items-center gap-5 text-sm text-50">
+              <!-- 点赞按钮：原为不可聚焦的 span，改为 button 以支持键盘操作与可访问名称 -->
+              <button
+                type="button"
+                aria-label="点赞"
+                th:aria-label="#{page.moments.upvote}"
+                th:if="${moment.stats != null}"
+                class="moment-upvote-btn flex h-10 items-center gap-1.5 transition hover:text-(--primary) active:scale-95"
+                th:attr="data-moment=${moment.metadata.name}"
+                th:data-count="${moment.stats.upvote}"
+              >
+                <span
+                  class="icon-[material-symbols--thumb-up-outline-rounded] text-xl"
+                ></span>
+                <span
+                  class="moment-upvote-count"
+                  th:text="${moment.stats.upvote}">0</span
+                >
+              </button>
+              <button
+                type="button"
+                aria-label="点赞"
+                th:aria-label="#{page.moments.upvote}"
+                th:unless="${moment.stats != null}"
+                class="moment-upvote-btn flex h-10 items-center gap-1.5 transition hover:text-(--primary) active:scale-95"
+                th:attr="data-moment=${moment.metadata.name}"
+                th:data-count="0"
+              >
+                <span
+                  class="icon-[material-symbols--thumb-up-outline-rounded] text-xl"
+                ></span>
+                <span class="moment-upvote-count">0</span>
+              </button>
+              <a
+                th:href="'/moments/' + ${moment.metadata.name} + '#comment'"
+                class="link flex h-10 items-center gap-1.5 text-50"
+              >
+                <span
+                  class="icon-[material-symbols--chat-bubble-outline-rounded] text-xl"
+                ></span>
+                <span
+                  th:if="${moment.stats != null}"
+                  th:text="${moment.stats.approvedComment}">0</span
+                >
+                <span th:unless="${moment.stats != null}">0</span>
+              </a>
+              <a
+                th:href="@{/moments/{name}(name=${moment.metadata.name})}"
+                class="link flex h-10 items-center gap-1.5 text-50"
+              >
+                <span class="icon-[material-symbols--chevron-right] text-xl"
+                ></span>
+                <span th:text="#{common.more}">More</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div
+      th:if="${#lists.isEmpty(moments.items)}"
+      class="py-12 text-center text-50"
+    >
+      <span th:text="#{page.moments.empty}">暂无瞬间</span>
+    </div>
+  </section>
+
+  <Pagination context="moments" class="mb-4 onload-animation" />
+
+  <!-- 点赞脚本必须写在 Layout 内（= Swup 容器内）：换页进来时由 SwupScriptsPlugin
+       重执行、重新绑定按钮（脚本靠 data-upvote-bound 幂等）。写在   <!-- 代码块增强（语言徽章 / 行号 / 长块折叠 / 复制），纯增量、不设门控 -->
+  <script src={`${basePath}/assets/code-block.js?v=${ASSET_VERSION}`} defer is:inline></script>
+
+</MainGridLayout>
+       之后会被产出到 </html> 外面、不在容器内，换页到本页时不会执行 → 点赞点不动 -->
+  <script
+    src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/upvote.js?v=${ASSET_VERSION}`}
+    defer
+    is:inline></script>
+</MainGridLayout>

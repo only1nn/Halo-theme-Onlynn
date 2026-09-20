@@ -1,0 +1,118 @@
+---
+// 移动端底部导航栏（对齐 Firefly 的 mobileBottomComponents）
+// 仅在手机端显示；条目由后台逐项开关，「搜索」呼出面板、「顶部」平滑回顶。
+// 图标沿用主题的 icon-[...] 工具类，不引入 astro-icon 组件，避免 sprite 去重副作用。
+---
+
+<nav
+  id="mobile-bottom-bar"
+  th:if="${theme.config?.layout?.mobileBottomBar?.enable == true}"
+  th:with="bar=${theme.config?.layout?.mobileBottomBar}"
+  th:aria-label="#{mobileBar.ariaLabel}"
+  aria-label="Mobile navigation"
+  class="card-base fixed bottom-0 left-0 right-0 z-40 flex items-stretch justify-around rounded-b-none rounded-t-2xl pb-[env(safe-area-inset-bottom)] lg:hidden"
+>
+  <a
+    th:if="${bar?.home != false}"
+    th:href="@{/}"
+    data-bar-key="home"
+    class="mobile-bar-item text-50"
+  >
+    <span class="icon-[material-symbols--home-outline-rounded]"></span>
+    <span th:text="#{mobileBar.home}">首页</span>
+  </a>
+
+  <a
+    th:if="${bar?.archives != false}"
+    th:href="@{/archives}"
+    data-bar-key="archives"
+    class="mobile-bar-item text-50"
+  >
+    <span class="icon-[material-symbols--archive-outline-rounded]"></span>
+    <span th:text="#{mobileBar.archives}">归档</span>
+  </a>
+
+  <a
+    th:if="${bar?.categories != false}"
+    th:href="@{/categories}"
+    data-bar-key="categories"
+    class="mobile-bar-item text-50"
+  >
+    <span class="icon-[material-symbols--folder-open-outline-rounded]"></span>
+    <span th:text="#{mobileBar.categories}">分类</span>
+  </a>
+
+  <a
+    th:if="${bar?.tags != false}"
+    th:href="@{/tags}"
+    data-bar-key="tags"
+    class="mobile-bar-item text-50"
+  >
+    <span class="icon-[material-symbols--sell-outline-rounded]"></span>
+    <span th:text="#{mobileBar.tags}">标签</span>
+  </a>
+
+  <!-- 搜索与回顶是动作而非链接：用 button，避免产生无目标的锚点 -->
+  <button
+    th:if="${bar?.search != false}"
+    type="button"
+    id="mobile-bar-search"
+    data-bar-key="search"
+    class="mobile-bar-item text-50"
+  >
+    <span class="icon-[material-symbols--search]"></span>
+    <span th:text="#{mobileBar.search}">搜索</span>
+  </button>
+
+  <button
+    th:if="${bar?.top != false}"
+    type="button"
+    id="mobile-bar-top"
+    data-bar-key="top"
+    class="mobile-bar-item text-50"
+  >
+    <span class="icon-[material-symbols--keyboard-arrow-up-rounded]"></span>
+    <span th:text="#{mobileBar.top}">顶部</span>
+  </button>
+</nav>
+
+<script is:inline>
+  (function () {
+    function init() {
+      var bar = document.getElementById("mobile-bottom-bar");
+      if (!bar) return;
+
+      // 当前位置高亮：与 pathname 完整匹配，首页额外接受空路径
+      var path = location.pathname.replace(/\/+$/, "") || "/";
+      var links = bar.querySelectorAll("[data-bar-key]");
+      for (var i = 0; i < links.length; i++) {
+        var key = links[i].getAttribute("data-bar-key");
+        var target = key === "home" ? "/" : "/" + key;
+        if (path === target) links[i].classList.add("mobile-bar-item-active");
+      }
+
+      var searchBtn = document.getElementById("mobile-bar-search");
+      if (searchBtn && !searchBtn.dataset.bound) {
+        searchBtn.dataset.bound = "1";
+        searchBtn.addEventListener("click", function () {
+          // 复用搜索面板既有的 float-panel-closed 开关
+          document
+            .getElementById("search-panel")
+            ?.classList.toggle("float-panel-closed");
+        });
+      }
+
+      var topBtn = document.getElementById("mobile-bar-top");
+      if (topBtn && !topBtn.dataset.bound) {
+        topBtn.dataset.bound = "1";
+        topBtn.addEventListener("click", function () {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      }
+    }
+
+    init();
+    document.addEventListener("astro:page-load", init);
+    document.addEventListener("swup:contentReplaced", init);
+  })();
+</script>

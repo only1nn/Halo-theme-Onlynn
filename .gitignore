@@ -1,18 +1,40 @@
-# Build and Release Folders
-bin-debug/
-bin-release/
-[Oo]bj/
-[Bb]in/
+# ── 依赖 ──
+node_modules/
+.pnpm-store/
 
-# Other files and folders
-.settings/
+# ── 构建产物 ──
+# 打包输出（可安装的 zip 由 CI artifact / Release 提供）
+dist/
+# 根目录下可能出现的 zip
+/*.zip
+# Astro 生成的类型与缓存
+.astro/
+# Halo 模板目录：由 astro build 从 src/pages 生成，源码在 src/
+templates/
+# 经典脚本编译产物（源码在 src/scripts/assets/*.ts 与 src/scripts/vendor/，
+# 构建时由 scripts/build-assets.mjs 生成，勿手改）
+public/assets/*.js
+# README → Halo 应用市场用版本，由 scripts/convert-readme.mjs 生成
+README-Halo.md
 
-# Executables
-*.swf
-*.air
-*.ipa
-*.apk
+# ── 日志 ──
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
+# ── 编辑器 / 系统 ──
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ── 本地临时文件 ──
+# 调试时导出的页面快照、临时校验产物等
+.h.html
+*.local
+.tmp-*/
+.bak-*/

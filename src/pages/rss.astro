@@ -1,0 +1,635 @@
+---
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+
+/*
+  RSS 订阅页（Halo 自定义页面「RSS 订阅」）。
+
+  结构与文案参考常见的「订阅引导页」，按主题的设计语言重做：
+    1. 页头       —— 图标 + 标题 + 一句友好的引导语
+    2. 什么是 RSS —— 说明 + 三条要点
+    3. 订阅地址   —— 虚线框 + 一键复制 + 行内结果提示
+    4. 推荐阅读器 —— 卡片网格，条目可后台配置
+    5. 最新文章   —— 条数可配，默认 5 篇
+    6. 结尾       —— 软性引导到友链
+
+  订阅地址 / 条目数 / 阅读器列表读自 settings.yaml 的 extendPages.rssPage；
+  最新文章由服务端渲染（postFinder.list），脚本未执行时页面依然完整可读。
+*/
+
+const countExpr =
+  "${theme.config?.extendPages?.rssPage?.count != null ? #conversions.convert(theme.config?.extendPages?.rssPage?.count, 'java.lang.Integer') : 5}";
+---
+
+<MainGridLayout
+  title="${singlePage.spec.title + ' - ' + site.title}"
+  description="#{page.rssPage.description(${site.title})}"
+>
+  <div class="rss-page mb-4 flex w-full flex-col gap-4">
+    <!-- ① 页头 -->
+    <section class="card-base onload-animation px-6 py-10 md:px-9">
+      <div class="rss-hero">
+        <div class="rss-hero-head">
+          <span class="rss-hero-icon">
+            <span class="icon-[fa6-solid--rss]" aria-hidden="true"></span>
+          </span>
+          <h1 class="rss-hero-title" th:text="${singlePage.spec.title}">
+            RSS 订阅
+          </h1>
+        </div>
+        <p class="rss-hero-text" th:utext="#{page.rssPage.intro}">
+          想要第一时间读到新文章吗？<br />不用天天来刷新，让 RSS 帮你把更新送到眼前
+        </p>
+      </div>
+    </section>
+
+    <!-- ② 订阅地址：虚线框 + 复制按钮 + 行内结果提示 -->
+    <section
+      class="card-base onload-animation px-6 py-6 md:px-9"
+      th:with="feedUrl=${#strings.defaultString(theme.config?.extendPages?.rssPage?.feedUrl, '/rss.xml')},
+               atomUrl=${#strings.defaultString(theme.config?.extendPages?.rssPage?.atomUrl, '')}"
+    >
+      <h2 class="rss-section-title">
+        <span class="rss-bar" aria-hidden="true"></span>
+        <span th:text="#{page.rssPage.linksTitle}">订阅地址</span>
+      </h2>
+      <p class="rss-text" th:text="#{page.rssPage.linksHint}">
+        复制下面的地址，粘贴到你的 RSS 阅读器里就可以了：
+      </p>
+
+      <div class="rss-link-box">
+        <span
+          class="icon-[material-symbols--link-rounded] rss-link-icon"
+          aria-hidden="true"></span>
+        <code class="rss-link-code" data-feed-url th:text="@{${feedUrl}}"
+          >/rss.xml</code
+        >
+        <button
+          type="button"
+          class="rss-copy-btn"
+          data-copy-target
+          th:aria-label="#{common.copy}"
+        >
+          <span
+            class="icon-[material-symbols--content-copy-outline-rounded]"
+            aria-hidden="true"></span>
+          <span th:text="#{common.copy}">复制</span>
+        </button>
+      </div>
+      <p class="rss-tip" data-copy-tip role="status" aria-live="polite"></p>
+
+      <div class="rss-link-box" th:if="${!#strings.isEmpty(atomUrl)}">
+        <span
+          class="icon-[material-symbols--link-rounded] rss-link-icon"
+          aria-hidden="true"></span>
+        <code class="rss-link-code" data-feed-url th:text="@{${atomUrl}}"
+          >/atom.xml</code
+        >
+        <button
+          type="button"
+          class="rss-copy-btn"
+          data-copy-target
+          th:aria-label="#{common.copy}"
+        >
+          <span
+            class="icon-[material-symbols--content-copy-outline-rounded]"
+            aria-hidden="true"></span>
+          <span th:text="#{common.copy}">复制</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ③ 什么是 RSS -->
+    <section class="card-base onload-animation px-6 py-6 md:px-9">
+      <h2 class="rss-section-title">
+        <span class="rss-bar" aria-hidden="true"></span>
+        <span th:text="#{page.rssPage.whatTitle}">什么是 RSS？</span>
+      </h2>
+      <p class="rss-text" th:text="#{page.rssPage.whatBody}">
+        RSS 是一种「内容订阅」格式。订阅后，你可以在阅读器里集中看到所有关注博客的更新，
+        不用一个个网站去打开。
+      </p>
+      <ul class="rss-points">
+        <li>
+          <span
+            class="icon-[material-symbols--check-circle-outline-rounded] rss-point-icon"
+            aria-hidden="true"></span>
+          <span th:text="#{page.rssPage.what1}"
+            >及时获取网站最新内容，无需手动访问</span
+          >
+        </li>
+        <li>
+          <span
+            class="icon-[material-symbols--check-circle-outline-rounded] rss-point-icon"
+            aria-hidden="true"></span>
+          <span th:text="#{page.rssPage.what2}"
+            >在一个地方管理多个网站的订阅</span
+          >
+        </li>
+        <li>
+          <span
+            class="icon-[material-symbols--check-circle-outline-rounded] rss-point-icon"
+            aria-hidden="true"></span>
+          <span th:text="#{page.rssPage.what3}"
+            >没有广告与算法推荐，只推送你订阅的内容</span
+          >
+        </li>
+      </ul>
+    </section>
+
+    <!-- ④ 推荐阅读器：卡片网格，条目来自后台配置 -->
+    <div
+      th:remove="tag"
+      th:with="readers=${!#lists.isEmpty(theme.config?.extendPages?.rssPage?.readers)
+        ? theme.config?.extendPages?.rssPage?.readers
+        : { {'name':'Folo','url':'https://follow.is/','note':'设计简洁，中文友好'}, {'name':'Inoreader','url':'https://www.inoreader.com/','note':'功能强大，免费版够用'}, {'name':'Feedly','url':'https://feedly.com/','note':'界面现代，上手快'}, {'name':'Readwise Reader','url':'https://readwise.io/read','note':'适合做笔记的稍后阅读工具'} }}"
+    >
+      <section
+        class="card-base onload-animation px-6 py-6 md:px-9"
+        th:if="${readers != null and !#lists.isEmpty(readers)}"
+      >
+        <h2 class="rss-section-title">
+          <span class="rss-bar" aria-hidden="true"></span>
+          <span th:text="#{page.rssPage.readersTitle}">推荐阅读器</span>
+        </h2>
+        <p class="rss-text" th:text="#{page.rssPage.readerHint}">
+          选一个你喜欢的，把上面的地址加进去就行：
+        </p>
+        <div class="rss-reader-grid">
+          <a
+            th:each="reader : ${readers}"
+            th:href="${reader.url}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rss-reader-card"
+          >
+            <span class="rss-reader-head">
+              <span class="rss-reader-name" th:text="${reader.name}">Folo</span>
+              <span
+                class="icon-[fa6-solid--arrow-up-right-from-square] rss-reader-arrow"
+                aria-hidden="true"></span>
+            </span>
+            <span
+              class="rss-reader-note"
+              th:text="${reader.note}"
+            >设计简洁，中文友好</span>
+          </a>
+        </div>
+      </section>
+    </div>
+
+    <!-- ⑤ 最新文章：服务端渲染，条数可配 -->
+    <div
+      th:remove="tag"
+      th:with="latest=${postFinder.list({page: 1, size: (theme.config?.extendPages?.rssPage?.count != null ? #conversions.convert(theme.config?.extendPages?.rssPage?.count, 'java.lang.Integer') : 5)})}"
+    >
+      <section
+        class="card-base onload-animation px-6 py-6 md:px-9"
+        th:if="${latest != null and latest.total > 0}"
+      >
+        <h2 class="rss-section-title">
+          <span class="rss-bar" aria-hidden="true"></span>
+          <span th:text="#{page.rssPage.latestTitle}">最新文章</span>
+        </h2>
+        <div class="flex flex-col">
+          <a
+            th:each="item : ${latest.items}"
+            th:href="@{${item.status.permalink}}"
+            class="rss-post group"
+          >
+            <span class="rss-post-title" th:text="${item.spec.title}"
+              >Post title</span
+            >
+            <span
+              class="line-clamp-2 rss-post-excerpt"
+              th:text="${item.status.excerpt}"
+            ></span>
+            <span class="rss-post-meta">
+              <span
+                class="icon-[material-symbols--calendar-today-outline-rounded]"
+                aria-hidden="true"></span>
+              <span
+                th:text="${#temporals.format(item.spec.publishTime, 'yyyy-MM-dd')}"
+                >2026-01-01</span
+              >
+            </span>
+          </a>
+        </div>
+      </section>
+    </div>
+
+    <!-- ⑥ 结尾 -->
+    <section class="card-base onload-animation px-6 py-6 md:px-9">
+      <p class="rss-outro" th:utext="#{page.rssPage.outro}">
+        如果你也在写博客，欢迎和我交换友链
+      </p>
+    </section>
+  </div>
+
+  <script is:inline>
+    // 复制订阅地址。swup 换页会重执行脚本，用 window 守卫 + document 级委托，
+    // 保证只绑定一次、换页后依然有效。
+    (function () {
+      if (window.__onlynnRssPageBound) return;
+      window.__onlynnRssPageBound = true;
+
+      function legacyCopy(text) {
+        try {
+          var area = document.createElement("textarea");
+          area.value = text;
+          area.setAttribute("readonly", "");
+          area.style.position = "fixed";
+          area.style.opacity = "0";
+          document.body.appendChild(area);
+          area.select();
+          var ok = document.execCommand("copy");
+          area.remove();
+          return ok;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      /* ⚠ writeText 成功时 resolve 的值是 undefined，不能把它当成功标志用：
+         必须显式 then(成功 → true, 失败 → 兜底)，否则复制成功也会被判成失败。
+         （早先这里写成 .catch(() => legacyCopy())，成功路径的 undefined 直接
+         落到后面的判定里，于是「已复制」被显示成「复制失败」。） */
+      function copy(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(text).then(
+            function () {
+              return true;
+            },
+            function () {
+              return legacyCopy(text);
+            },
+          );
+        }
+        return Promise.resolve(legacyCopy(text));
+      }
+
+      function tipFor(box) {
+        if (!box) return null;
+        var next = box.nextElementSibling;
+        return next && next.hasAttribute("data-copy-tip") ? next : null;
+      }
+
+      document.addEventListener("click", function (e) {
+        var btn =
+          e.target && e.target.closest
+            ? e.target.closest("[data-copy-target]")
+            : null;
+        if (!btn) return;
+
+        var box = btn.parentElement;
+        var code = box ? box.querySelector("[data-feed-url]") : null;
+        if (!code) return;
+
+        var text = (code.textContent || "").trim();
+        var label = btn.querySelector("span:last-child");
+        var tip = tipFor(box);
+
+        copy(text).then(function (ok) {
+          if (label && !label.hasAttribute("data-label")) {
+            label.setAttribute("data-label", label.textContent);
+          }
+          if (label) {
+            label.textContent = ok
+              ? "已复制"
+              : label.getAttribute("data-label") || "复制";
+            if (ok) {
+              window.setTimeout(function () {
+                label.textContent = label.getAttribute("data-label") || "复制";
+              }, 1800);
+            }
+          }
+
+          if (tip) {
+            tip.textContent = ok
+              ? "已复制，去阅读器里粘贴吧～"
+              : "复制失败，请手动选中上面的地址复制～";
+            tip.classList.toggle("is-error", !ok);
+            window.setTimeout(function () {
+              tip.textContent = "";
+              tip.classList.remove("is-error");
+            }, 3000);
+          }
+        });
+      });
+    })();
+  </script>
+
+  <style>
+    /* 本页专用样式：只在 RSS 页生效，不污染全局。
+       配色全走主题变量（--primary / --line-divider 等），亮暗两套自动成立。 */
+    .rss-page {
+      --rss-soft: color-mix(in oklab, var(--primary) 7%, transparent);
+      --rss-line: color-mix(in oklab, var(--primary) 28%, transparent);
+      --rss-strong: rgb(23 23 23);
+      --rss-muted: rgb(0 0 0 / 0.55);
+    }
+
+    :root.dark .rss-page {
+      --rss-strong: rgb(245 245 245);
+      --rss-muted: rgb(255 255 255 / 0.55);
+    }
+
+    /* ① 页头 */
+    .rss-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.75rem;
+    }
+
+    /* 图标与标题同一行，整体居中 */
+    .rss-hero-head {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+    }
+
+    .rss-hero-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 9999px;
+      background-color: var(--rss-soft);
+      color: var(--primary);
+      font-size: 1.5rem;
+    }
+
+    .rss-hero-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--rss-strong);
+    }
+
+    .rss-hero-text {
+      max-width: 32rem;
+      font-size: 0.9375rem;
+      line-height: 1.9;
+      color: var(--rss-muted);
+    }
+
+    /* 分区标题：沿用主题的竖条装饰 */
+    .rss-section-title {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--rss-strong);
+    }
+
+    .rss-bar {
+      width: 0.25rem;
+      height: 1rem;
+      margin-right: 0.5rem;
+      border-radius: 0.375rem;
+      background-color: var(--primary);
+    }
+
+    .rss-text {
+      font-size: 0.9375rem;
+      line-height: 1.9;
+      color: var(--rss-muted);
+    }
+
+    /* ② 要点列表 */
+    .rss-points {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      color: var(--rss-muted);
+    }
+
+    .rss-points li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      line-height: 1.7;
+    }
+
+    .rss-point-icon {
+      flex-shrink: 0;
+      margin-top: 0.2rem;
+      color: var(--primary);
+    }
+
+    /* ③ 订阅地址框：虚线框，与「待复制」的语义呼应 */
+    .rss-link-box {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+      padding: 0.75rem 0.9rem;
+      border: 1px dashed var(--rss-line);
+      border-radius: 0.75rem;
+      background-color: var(--rss-soft);
+      transition: border-color 0.2s ease;
+    }
+
+    .rss-link-box:hover {
+      border-color: var(--primary);
+    }
+
+    .rss-link-icon {
+      flex-shrink: 0;
+      color: var(--primary);
+    }
+
+    .rss-link-code {
+      flex: 1 1 12rem;
+      min-width: 0;
+      font-family: var(
+        --font-mono,
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        monospace
+      );
+      font-size: 0.8125rem;
+      color: var(--rss-strong);
+      overflow-wrap: anywhere;
+    }
+
+    .rss-copy-btn {
+      display: inline-flex;
+      flex-shrink: 0;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.4rem 0.9rem;
+      border: 0;
+      border-radius: 0.5rem;
+      background-color: var(--primary);
+      color: white;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+
+    .rss-copy-btn:hover {
+      opacity: 0.88;
+    }
+
+    .rss-copy-btn:active {
+      transform: scale(0.95);
+    }
+
+    .rss-copy-btn:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    /* 结果提示：占位固定高度，出现/消失不推动布局 */
+    .rss-tip {
+      min-height: 1.35rem;
+      margin-top: 0.5rem;
+      font-size: 0.8125rem;
+      color: var(--primary);
+    }
+
+    .rss-tip.is-error {
+      color: rgb(220 38 38);
+    }
+
+    :root.dark .rss-tip.is-error {
+      color: rgb(248 113 113);
+    }
+
+    /* ④ 阅读器卡片 */
+    .rss-reader-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .rss-reader-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      padding: 0.85rem 1rem;
+      border-radius: 0.75rem;
+      background-color: var(--rss-soft);
+      transition:
+        transform 0.2s ease,
+        background-color 0.2s ease;
+    }
+
+    .rss-reader-card:hover {
+      transform: translateY(-2px);
+      background-color: color-mix(in oklab, var(--primary) 13%, transparent);
+    }
+
+    .rss-reader-head {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .rss-reader-name {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--rss-strong);
+      transition: color 0.2s ease;
+    }
+
+    .rss-reader-card:hover .rss-reader-name {
+      color: var(--primary);
+    }
+
+    .rss-reader-arrow {
+      font-size: 0.75rem;
+      color: var(--primary);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .rss-reader-card:hover .rss-reader-arrow {
+      opacity: 1;
+    }
+
+    .rss-reader-note {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      color: var(--rss-muted);
+    }
+
+    /* ⑤ 最新文章列表 */
+    .rss-post {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 0.85rem 0;
+      border-bottom: 1px solid var(--line-divider);
+      transition: padding-left 0.2s ease;
+    }
+
+    .rss-post:first-child {
+      padding-top: 0;
+    }
+
+    .rss-post:last-child {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .rss-post:hover {
+      padding-left: 0.25rem;
+    }
+
+    .rss-post-title {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--rss-strong);
+      transition: color 0.2s ease;
+    }
+
+    .rss-post:hover .rss-post-title {
+      color: var(--primary);
+    }
+
+    .rss-post-excerpt {
+      font-size: 0.8125rem;
+      line-height: 1.7;
+      color: var(--rss-muted);
+    }
+
+    .rss-post-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-top: 0.15rem;
+      font-size: 0.75rem;
+      color: color-mix(in oklab, var(--rss-muted) 70%, transparent);
+    }
+
+    /* ⑥ 结尾 */
+    .rss-outro {
+      text-align: center;
+      font-size: 0.875rem;
+      line-height: 2;
+      color: var(--rss-muted);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .rss-reader-card,
+      .rss-post {
+        transition-duration: 1ms;
+      }
+      .rss-reader-card:hover {
+        transform: none;
+      }
+    }
+  </style>
+</MainGridLayout>

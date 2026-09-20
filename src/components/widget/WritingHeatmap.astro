@@ -1,0 +1,306 @@
+---
+import WidgetLayout from "./WidgetLayout.astro";
+
+interface Props {
+  class?: string;
+}
+
+const className = Astro.props.class;
+
+// 写作热力图（GitHub 贡献图样式）：近一年的发文密度。
+//
+// 数据由客户端脚本拉取公开的 posts 列表接口，只回溯热力图窗口（约 53 周）即停止
+// 翻页 —— 文章再多也不会把整站拉一遍。日期聚合与绘制都在脚本里做，
+// 服务端只渲染一个空容器，避免为上千篇文章输出上千个隐藏节点。
+---
+
+<WidgetLayout
+  nameKey="widget.heatmap.title"
+  name="写作热力图"
+  id="writing-heatmap-widget"
+  class={className}
+>
+  <div id="writing-heatmap" class="flex flex-col gap-2">
+    <!-- 月份标签与星期标签都由脚本填充，未执行时下方显示占位文案 -->
+    <div id="heatmap-months" class="heatmap-months"></div>
+    <div class="heatmap-body flex gap-1.5">
+      <div
+        id="heatmap-weekdays"
+        class="heatmap-weekdays flex shrink-0 flex-col justify-between text-[0.625rem] leading-none text-50"
+        aria-hidden="true"
+      >
+      </div>
+      <div id="heatmap-grid" class="heatmap-grid hide-scrollbar overflow-x-auto pb-1"></div>
+    </div>
+    <div
+      id="heatmap-status"
+      class="text-xs text-50"
+      th:text="#{widget.heatmap.loading}"
+    >
+      统计中…
+    </div>
+  </div>
+
+  <script
+    is:inline
+    data-heatmap-weekdays={JSON.stringify(["一", "三", "五"])}
+    th:attr="data-heatmap-months=#{widget.heatmap.months},
+             data-heatmap-few=#{widget.heatmap.few},
+             data-heatmap-many=#{widget.heatmap.many},
+             data-heatmap-total=#{widget.heatmap.total},
+             data-heatmap-none=#{widget.heatmap.none}"
+  >
+    // 近 53 周（GitHub 同款窗口）。整周对齐：从本周日往回推 53*7 天。
+    (function () {
+      if (window.__onlynnHeatmapBound) return;
+      window.__onlynnHeatmapBound = true;
+
+      // 侧栏可用宽度约 230px，53 周只能压到 3px/格，太小看不清；
+      // 26 周能保持约 8px/格，是可读性与时间跨度的平衡点
+      var WEEKS = 26;
+      var DAY = 86400000;
+      var STATUS = "none";
+
+      function dayKey(d) {
+        return (
+          d.getFullYear() +
+          "-" +
+          String(d.getMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(d.getDate()).padStart(2, "0")
+        );
+      }
+
+      function readMeta(el) {
+        var d = el.dataset;
+        return {
+          months: (d.heatmapMonths || "1,2,3,4,5,6,7,8,9,10,11,12").split(","),
+          few: d.heatmapFew || "少",
+          many: d.heatmapMany || "多",
+          total: d.heatmapTotal || "一年内发布 %s 篇",
+          none: d.heatmapNone || "暂无文章",
+        };
+      }
+
+      function render(counts, meta) {
+        var grid = document.getElementById("heatmap-grid");
+        var weekdays = document.getElementById("heatmap-weekdays");
+        var status = document.getElementById("heatmap-status");
+        if (!grid) return;
+
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        // 回退到本周日，再往前推满周数，保证列是完整的自然周
+        var start = new Date(today.getTime() - today.getDay() * DAY - (WEEKS - 1) * 7 * DAY);
+
+        var max = 0;
+        var total = 0;
+        var i;
+        var cursor = new Date(start);
+        for (i = 0; i < WEEKS * 7; i++) {
+          var c = counts[dayKey(cursor)] || 0;
+          if (c > max) max = c;
+          total += c;
+          cursor = new Date(cursor.getTime() + DAY);
+        }
+
+        // 分档：0 / 1 / 2 / 3 / 4+ —— 与 GitHub 一致，避免长尾把色阶拉平
+        function level(c) {
+          if (c <= 0) return 0;
+          if (max <= 3) return c >= max ? 3 : c;
+          return Math.min(4, 1 + Math.floor((c / max) * 3));
+        }
+
+        var frag = document.createDocumentFragment();
+        cursor = new Date(start);
+        var monthMarks = [];
+        for (var w = 0; w < WEEKS; w++) {
+          var col = document.createElement("div");
+          col.className = "heatmap-col";
+          for (var d = 0; d < 7; d++) {
+            var key = dayKey(cursor);
+            var n = counts[key] || 0;
+            var cell = document.createElement("span");
+            cell.className = "heatmap-cell";
+            cell.dataset.level = String(level(n));
+            cell.title = key + " · " + n;
+            col.appendChild(cell);
+            cursor = new Date(cursor.getTime() + DAY);
+          }
+          frag.appendChild(col);
+          // 列首所在月的 1 号：给这一列打月份标记
+          var firstOfCol = new Date(start.getTime() + w * 7 * DAY);
+          if (firstOfCol.getDate() <= 7) monthMarks.push([w, firstOfCol.getMonth()]);
+        }
+        grid.textContent = "";
+        grid.appendChild(frag);
+
+        if (weekdays) {
+          weekdays.textContent = "";
+          ["一", "", "三", "", "五", "", ""].forEach(function (t) {
+            var s = document.createElement("span");
+            s.textContent = t;
+            weekdays.appendChild(s);
+          });
+        }
+
+        // 月份标签：每段跨越「下一个标记出现前」的列数，宽度用 flex-grow 分配，
+        // 这样标签始终与下方格子列对齐（格子定宽，列距固定）
+        var monthsEl = document.getElementById("heatmap-months");
+        if (monthsEl && meta.months.length === 12 && monthMarks.length > 0) {
+          monthsEl.textContent = "";
+          for (var mi = 0; mi < monthMarks.length; mi++) {
+            var startCol = monthMarks[mi][0];
+            var endCol =
+              mi + 1 < monthMarks.length ? monthMarks[mi + 1][0] : WEEKS;
+            var span = document.createElement("span");
+            span.className = "heatmap-month";
+            span.textContent = meta.months[monthMarks[mi][1]];
+            span.style.flexGrow = String(Math.max(1, endCol - startCol));
+            monthsEl.appendChild(span);
+          }
+          // 末段兜底：补一个占位把右侧空白撑满，避免标签被拉宽错位
+          var tail = document.createElement("span");
+          tail.style.flexGrow = "0";
+          tail.style.width = "0";
+          monthsEl.appendChild(tail);
+        }
+
+        if (status) {
+          status.textContent = total > 0 ? meta.total.replace("%s", total) : meta.none;
+        }
+      }
+
+      function load() {
+        var host = document.getElementById("writing-heatmap");
+        if (!host) return;
+        var script = host.parentElement?.querySelector("script[data-heatmap-months]") ||
+          document.querySelector("script[data-heatmap-months]");
+        var meta = script ? readMeta(script) : { months: [], few: "", many: "", total: "%s", none: "" };
+
+        var counts = {};
+        var cutoff = new Date();
+        cutoff.setHours(0, 0, 0, 0);
+        cutoff = new Date(cutoff.getTime() - (WEEKS * 7 + 7) * DAY);
+
+        var page = 0;
+        var size = 50;
+
+        function step() {
+          fetch(
+            "/apis/api.content.halo.run/v1alpha1/posts?page=" +
+              page +
+              "&size=" +
+              size +
+              "&sort=spec.publishTime,desc",
+          )
+            .then(function (res) {
+              if (!res.ok) throw new Error(String(res.status));
+              return res.json();
+            })
+            .then(function (data) {
+              var items = (data && data.items) || [];
+              var reachedCutoff = false;
+              for (var i = 0; i < items.length; i++) {
+                var t = items[i].spec && items[i].spec.publishTime;
+                if (!t) continue;
+                var dt = new Date(t);
+                if (dt < cutoff) {
+                  reachedCutoff = true;
+                  break;
+                }
+                var k = dayKey(dt);
+                counts[k] = (counts[k] || 0) + 1;
+              }
+              var loaded = (page + 1) * size;
+              if (reachedCutoff || items.length < size || loaded >= (data.total || 0)) {
+                render(counts, meta);
+                return;
+              }
+              page++;
+              step();
+            })
+            .catch(function (err) {
+              console.warn("[WritingHeatmap] 拉取文章失败:", err);
+              render(counts, meta);
+            });
+        }
+
+        step();
+      }
+
+      load();
+      document.addEventListener("astro:page-load", load);
+      document.addEventListener("swup:contentReplaced", load);
+    })();
+  </script>
+
+  <!-- is:global：格子与月份标签由脚本动态创建，没有 Astro 的作用域属性，
+       默认的 scoped style 匹配不到；用 #writing-heatmap 前缀把影响面收回本组件 -->
+  <style is:global>
+    /* 53 列等分容器宽度：侧栏宽窄自适应，永远铺满且不出现横向滚动。
+       格子用 aspect-ratio 保持正方，行高随列宽联动 */
+    #writing-heatmap .heatmap-grid {
+      display: flex;
+      gap: 1.5px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    #writing-heatmap .heatmap-col {
+      display: flex;
+      flex: 1 1 0;
+      min-width: 0;
+      flex-direction: column;
+      gap: 1.5px;
+    }
+
+    #writing-heatmap .heatmap-cell {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 1px;
+      background-color: color-mix(in oklab, var(--primary) 8%, transparent);
+    }
+
+    /* 四档深浅：用主题色相调深浅，换主题色时整图跟着变 */
+    #writing-heatmap .heatmap-cell[data-level="1"] {
+      background-color: color-mix(in oklab, var(--primary) 30%, transparent);
+    }
+    #writing-heatmap .heatmap-cell[data-level="2"] {
+      background-color: color-mix(in oklab, var(--primary) 55%, transparent);
+    }
+    #writing-heatmap .heatmap-cell[data-level="3"] {
+      background-color: color-mix(in oklab, var(--primary) 78%, transparent);
+    }
+    #writing-heatmap .heatmap-cell[data-level="4"] {
+      background-color: var(--primary);
+    }
+
+    /* 星期标签与月份标签同用一条窄栏宽度，保证月份与下方列对齐 */
+    #writing-heatmap .heatmap-weekdays {
+      width: 1.15rem;
+    }
+
+    #writing-heatmap .heatmap-weekdays span {
+      display: block;
+      flex: 1 1 0;
+      line-height: 1;
+    }
+
+    #writing-heatmap .heatmap-months {
+      display: flex;
+      /* 与网格左侧的星期栏同宽 + 同一 gap，月份才落在对应列上 */
+      margin-left: calc(1.15rem + 0.375rem);
+      gap: 1.5px;
+      font-size: 0.625rem;
+      line-height: 1;
+      color: var(--text-50, #999);
+    }
+
+    #writing-heatmap .heatmap-month {
+      overflow: hidden;
+      white-space: nowrap;
+    }
+  </style>
+</WidgetLayout>

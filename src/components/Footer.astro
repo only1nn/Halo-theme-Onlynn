@@ -1,0 +1,164 @@
+---
+import FooterFriendLinks from "./FooterFriendLinks.astro";
+
+const currentYear = new Date().getFullYear();
+---
+
+<div
+  class="mx-8 my-10 border-t border-dashed border-(--primary)/15 transition dark:border-(--primary)/20 md:mx-32"
+>
+</div>
+
+<!-- 页脚友情链接卡片墙：数据来自 Links 插件（PluginLinks），插件未安装 / 未开启时整块跳过。
+     组件内部为 <nav> 地标，样式随组件（is:global，Astro 会提升到 head 且只输出一次）。 -->
+<FooterFriendLinks />
+<footer
+  class="mb-12 flex flex-col items-center justify-center rounded-2xl px-6 text-center text-sm text-50 transition"
+>
+  <!-- 站点运行时间：整行独占，点击跳到「关于」页。
+       单位文案由 i18n 渲染进 data-format（脚本不硬编码中文）；
+       上线时间写进 data-start，秒数由 site-uptime.js 实时更新。
+       脚本未执行时保留服务端占位符，不会显示错误的数字 -->
+  <Fragment
+    th:if="${theme.config?.footer?.runningTime?.enable == true and !#strings.isEmpty(theme.config?.footer?.runningTime?.startDate)}"
+  >
+    <a
+      id="site-uptime"
+      th:href="${#strings.isEmpty(theme.config?.footer?.runningTime?.link) ? null : theme.config?.footer?.runningTime?.link}"
+      th:data-start="${theme.config?.footer?.runningTime?.startDate}"
+      th:data-format="#{footer.uptimeFormat}"
+      class="link mt-2 mb-3 inline-flex items-center gap-x-1 font-medium text-(--primary)"
+    >
+      <span
+        class="icon-[material-symbols--schedule-outline-rounded] text-[1rem]"
+        aria-hidden="true"></span>
+      <span th:text="#{footer.runningTime}">本站已运行</span>
+      <span data-uptime-value>--</span>
+    </a>
+    <!-- 秒数实时走动需要脚本；关掉该功能时不下载。Footer 在布局里渲染两次
+         （移动端 / 桌面端各一份），脚本自身有 window 级幂等守卫，重复引入无副作用 -->
+    <script
+      src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/site-uptime.js?v=${ASSET_VERSION}`}
+      defer
+      is:inline></script>
+  </Fragment>
+
+  <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+    <!-- Astro 编译会剥掉元素间的空白，行内空隙必须用 {" "} 显式补回（见下方 Powered by 行） -->
+    <span
+      >&copy; <span id="copyright-year">{currentYear}</span>{" "}
+      <span th:text="${site.title}">Ethereal</span>.{" "}
+      <span th:text="#{footer.rights}">All Rights Reserved.</span></span
+    >
+    <span class="whitespace-nowrap">
+      <span
+        th:if="${theme.config?.footer?.displayLinks?.enable_privacy != null ? theme.config?.footer?.displayLinks?.enable_privacy : false}"
+        th:remove="tag"
+        >/&nbsp;<a
+          class="link font-medium text-(--primary)"
+          th:href="@{${theme.config?.footer?.displayLinks?.privacy_url != null ? theme.config?.footer?.displayLinks?.privacy_url : '/privacy'}}"
+          th:text="#{common.privacyPolicy}">隐私政策</a
+        ></span
+      >
+      <span
+        th:if="${pluginFinder.available('PluginFeed') && (theme.config?.footer?.displayLinks?.enable_rss == null || theme.config?.footer?.displayLinks?.enable_rss)}"
+        th:remove="tag"
+        >&nbsp;/&nbsp;<a
+          class="link font-medium text-(--primary)"
+          target="_blank"
+          th:href="@{/rss.xml}">RSS</a
+        ></span
+      >
+      <span
+        th:if="${pluginFinder.available('PluginSitemap') && (theme.config?.footer?.displayLinks?.enable_sitemap == null || theme.config?.footer?.displayLinks?.enable_sitemap)}"
+        th:remove="tag"
+        >&nbsp;/&nbsp;<a
+          class="link font-medium text-(--primary)"
+          target="_blank"
+          th:href="@{/sitemap.xml}">Sitemap</a
+        ></span
+      >
+    </span>
+  </div>
+  <!-- 自定义页脚链接 -->
+  <div
+    th:if="${theme.config?.footer?.customLinks != null && not #lists.isEmpty(theme.config?.footer?.customLinks?.items)}"
+    class="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1"
+  >
+    <span
+      th:each="link, stat : ${theme.config?.footer?.customLinks?.items}"
+      th:remove="tag"
+    >
+      <span
+        th:if="${not #strings.isEmpty(link.html)}"
+        th:remove="tag"
+        th:utext="${link.html}"></span>
+      <span th:unless="${not #strings.isEmpty(link.html)}" th:remove="tag">
+        <span th:if="${not stat.first}"> / </span>
+        <a
+          th:if="${not #strings.isEmpty(link.url)}"
+          class="link font-medium text-(--primary)"
+          target="_blank"
+          th:href="${link.url}"
+          th:text="${link.name}">Link</a
+        >
+        <span
+          th:unless="${not #strings.isEmpty(link.url)}"
+          class="link font-medium text-(--primary)"
+          th:text="${link.name}">Link</span
+        >
+      </span>
+    </span>
+  </div>
+  <div
+    class="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-2"
+    th:if="${not #strings.isEmpty(theme.config?.footer?.beian?.icp_text) or not #strings.isEmpty(theme.config?.footer?.beian?.gongan_text)}"
+  >
+    <a
+      th:if="${not #strings.isEmpty(theme.config?.footer?.beian?.icp_text)}"
+      class="inline-flex items-center gap-1 link font-medium text-(--primary)"
+      th:href="${theme.config?.footer?.beian?.icp_link}"
+      target="_blank"
+    >
+      <span class="icon-[material-symbols--verified-outline-rounded] h-4 w-4"
+      ></span>
+      <span class="text-sm" th:text="${theme.config?.footer?.beian?.icp_text}"
+      ></span>
+    </a>
+    <a
+      th:if="${not #strings.isEmpty(theme.config?.footer?.beian?.gongan_text)}"
+      class="inline-flex items-center gap-1 link font-medium text-(--primary)"
+      th:href="${theme.config?.footer?.beian?.gongan_link}"
+      target="_blank"
+    >
+      <img
+        src={`/themes/onlynn/assets/images/ghs.png?v=${ASSET_VERSION}`}
+        alt="公安备案图标"
+        loading="lazy"
+        decoding="async"
+        width="16"
+        height="16"
+        class="inline-block h-4 w-4"
+      />
+      <span
+        class="text-sm"
+        th:text="${theme.config?.footer?.beian?.gongan_text}"></span>
+    </a>
+  </div>
+  <div
+    th:if="${theme.config?.footer?.displayLinks?.enable_theme_credit == null || theme.config?.footer?.displayLinks?.enable_theme_credit}"
+    class="mt-2"
+  >
+    <span th:text="#{footer.poweredBy}">Powered by</span>{" "}
+    <a
+      class="link font-medium text-(--primary)"
+      target="_blank"
+      href="https://www.halo.run">Halo</a
+    >{" "}&{" "}
+    <a
+      class="link font-medium text-(--primary)"
+      target="_blank"
+      href="https://github.com/only1nn/halo-theme-Onlynn">Onlynn</a
+    >
+  </div>
+</footer>

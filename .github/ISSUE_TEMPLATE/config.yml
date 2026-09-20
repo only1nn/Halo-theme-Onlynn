@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📖 使用文档与配置说明
+    url: https://github.com/only1nn/halo-theme-Onlynn#readme
+    about: 安装、主题设置、插件兼容等说明都在 README 里
+  - name: 💬 讨论区
+    url: https://github.com/only1nn/halo-theme-Onlynn/discussions
+    about: 使用过程中的疑问可以在这里讨论
