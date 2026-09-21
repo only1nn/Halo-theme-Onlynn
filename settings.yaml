@@ -2777,6 +2777,58 @@ spec:
               min: 0
               label: 最多显示条数
               help: "超出条数时在卡片下方显示下拉箭头，点击跳转到完整友链页；填 0 表示全部显示"
+        - $formkit: group
+          name: linkColumns
+          label: 页脚链接栏
+          value:
+            enable: false
+            title: ""
+            menu: ""
+            homeOnly: false
+            columns: "4"
+          children:
+            - $formkit: switch
+              name: enable
+              id: linkColumns_enable
+              label: 启用页脚链接栏
+              value: false
+              help: "在页脚显示多栏链接区（参考「导航 / 组织 / 协议 / 友链」那种分栏）。链接内容来自 Halo 菜单"
+            - $formkit: text
+              name: title
+              if: "$get(linkColumns_enable).value"
+              label: 区块标题
+              value: ""
+              help: "显示在链接栏上方的标题，与页脚「友情链接」同一套样式；留空则不显示标题行"
+            - $formkit: menuSelect
+              name: menu
+              id: linkColumns_menu
+              if: "$get(linkColumns_enable).value"
+              label: 菜单
+              value: ""
+              help: "留空使用系统主菜单。建议为页脚单独建一个菜单（外观 → 菜单 → 新建），一级项当栏目标题、二级项当链接；一级项没有子项时会把自身作为该栏的唯一链接"
+            - $formkit: switch
+              name: homeOnly
+              if: "$get(linkColumns_enable).value"
+              label: 仅在首页显示
+              value: false
+              help: "开启后链接栏只出现在首页页脚"
+            - $formkit: select
+              name: columns
+              if: "$get(linkColumns_enable).value"
+              label: 每行列数
+              value: "4"
+              options:
+                - label: 两列
+                  value: "2"
+                - label: 三列
+                  value: "3"
+                - label: 四列（推荐）
+                  value: "4"
+                - label: 五列
+                  value: "5"
+                - label: 六列
+                  value: "6"
+              help: "桌面端每行显示几栏；窄屏自动降为两列。栏数多于设定时自动换到下一行"
     - group: links
       label: 友情链接
       formSchema:

@@ -146,6 +146,9 @@ table of contents
 - **Comments**: integrates with Halo's comment plugin
 - **Friend links**: application flow, random visit, collapsible panels, footer card wall,
   moments feed
+- **Footer link columns**: a multi-column link block (Navigation / Organisation / Legal /
+  Friends and so on) whose titles and links are all configurable, reusing Halo menus so
+  ordering and nesting are edited in the menu editor
 - **Visitor customisation**: the navbar "display settings" panel lets visitors switch
   layout, colour, wallpaper and effects. The admin can retract all of it with a single
   master switch — the entry disappears and everyone sees exactly what you configured
@@ -182,7 +185,7 @@ The settings page is organised into 10 groups. The ones you will touch most:
 | **Sidebar**     | Which widgets go in the left and right columns, plus per-widget options                                                                                                                                                         |
 | **Post**        | License card, related posts, article meta (word count / reading time), code blocks, content display, TOC, excerpt, action bar (including focus mode)                                                                            |
 | **Extra pages** | Moments, timeline, skills, RSS subscription page, sponsor page                                                                                                                                                                  |
-| **Footer**      | Site uptime, ICP/PSB filing info, links, custom links, footer friend links                                                                                                                                                      |
+| **Footer**      | Site uptime, ICP/PSB filing info, links, custom links, footer friend links, footer link columns                                                                                                                                 |
 
 > **Style → Display settings panel is the single place for appearance configuration.**
 > The upper half controls what visitors may change; the lower half holds the defaults for
@@ -239,6 +242,23 @@ When creating a menu item in Halo's admin (Appearance → Menus), **just put the
 (`https://example.com`) also works; tick "open in new window" for those. Menu items can
 carry an Iconify icon too (the theme registers the menu annotation, so the field appears
 in the menu item form).
+
+### The footer link columns reuse menus too
+
+The multi-column link block under Theme settings → Footer → Footer link columns reads a
+**Halo menu** rather than keeping a second list of its own:
+
+1. Create a menu under Appearance → Menus (call it "Footer", say)
+2. Put the **column titles** in as top-level items (Navigation, Legal, Friends …) — their
+   own link can be left blank
+3. Add **children** under each top-level item; the children are the links that get shown
+4. Back in Theme settings → Footer → Footer link columns: switch it on, pick that menu,
+   choose how many columns per row; the optional Block title adds a centred heading above
+   the columns (same style as the footer friend-links heading)
+
+Ordering, nesting and icons are then all maintained in Halo's own menu editor. A top-level
+item with no children falls back to showing itself as that column's only link, so you never
+get an empty column — and deleting a top-level item removes the whole column.
 
 Below is every reachable path the theme provides, grouped by where it comes from.
 

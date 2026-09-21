@@ -1,5 +1,6 @@
 ---
 import FooterFriendLinks from "./FooterFriendLinks.astro";
+import FooterLinkColumns from "./FooterLinkColumns.astro";
 
 const currentYear = new Date().getFullYear();
 ---
@@ -12,6 +13,11 @@ const currentYear = new Date().getFullYear();
 <!-- 页脚友情链接卡片墙：数据来自 Links 插件（PluginLinks），插件未安装 / 未开启时整块跳过。
      组件内部为 <nav> 地标，样式随组件（is:global，Astro 会提升到 head 且只输出一次）。 -->
 <FooterFriendLinks />
+
+<!-- 页脚链接栏：多栏链接，数据来自 Halo 菜单（后台「页脚 → 页脚链接栏」里选菜单）。
+     放在版权信息之前：两者都是站点层面的信息，读起来是一组。 -->
+<FooterLinkColumns />
+
 <footer
   class="mb-12 flex flex-col items-center justify-center rounded-2xl px-6 text-center text-sm text-50 transition"
 >
