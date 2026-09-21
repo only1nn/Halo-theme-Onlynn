@@ -9,6 +9,9 @@ const { class: className } = Astro.props;
 // 两种模式共用的内容区样式（断词避免长 URL 横向溢出）；HTML 模式再追加限高与内部滚动
 const contentClass =
   "mb-3 break-words leading-relaxed text-neutral-600 dark:text-neutral-300";
+// 纯文本分支额外保留换行：HTML 默认折叠空白，站长写的多行公告会被挤成一行。
+// 只加在纯文本分支上 —— HTML 模式加了会凭空多出一堆空白
+const plainTextClass = `${contentClass} whitespace-pre-wrap`;
 const htmlContentClass = `${contentClass} overflow-y-auto overflow-x-hidden`;
 ---
 
@@ -37,7 +40,7 @@ const htmlContentClass = `${contentClass} overflow-y-auto overflow-x-hidden`;
     </div>
     <div
       th:unless="${theme.config?.sidebar?.announcement?.enable_html == true}"
-      class={contentClass}
+      class={plainTextClass}
       th:text="${announcementContent}"
     >
       欢迎来到我的博客！这是一则示例公告。

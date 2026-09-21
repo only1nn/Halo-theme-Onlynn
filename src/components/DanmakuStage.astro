@@ -1,0 +1,67 @@
+---
+/*
+  弹幕幕布（评论弹幕）。
+
+  渲染门只看两件事：后台「弹幕留言 → 启用」与「显示范围」是否匹配当前页面。
+  刻意**不看** haloCommentEnabled —— 那个变量只有在评论插件实现了 CommentWidget
+  扩展点时才为真，自带 UI 的评论插件不一定满足；依赖它会让弹幕跟着评论区一起消失。
+
+  两个元素分工：
+    .danmaku-slot  槽位，承担与宿主内容之间的留白和分隔线
+    .danmaku-stage 幕布本体，固定高度 + 裁剪，脚本按它的尺寸算轨道与速度
+
+  ⚠ hidden 必须挂在幕布上、不能挂槽位：槽位的收起是由 CSS 的「幕布隐藏则槽位也隐藏」
+  推出来的，这样即使浏览器/CDN 还留着旧版 danmaku.js（只会解开幕布的 hidden），
+  槽位也能跟着显示出来；反之把 hidden 挂在槽位上，旧脚本就永远揭不开它。
+*/
+interface Props {
+  /** 当前页面类型，用于匹配后台「显示范围」：post / guestbook */
+  scope: "post" | "guestbook";
+  /** 落点形态：
+   *  - inline：作为宿主卡片内部的一块区域（留言板欢迎卡片）
+   *  - card：自带卡片外壳，独立成卡（文章页，不与评论区共用框） */
+  variant?: "card" | "inline";
+  /** 分隔线：指示幕布与宿主内容的分界，可放上方或下方；独立成卡时不需要 */
+  divider?: "top" | "bottom" | "none";
+}
+
+const { scope, variant = "inline", divider = "none" } = Astro.props;
+/* 显示范围：默认只开在留言板（弹幕最自然的落点），可选文章页或全部 */
+const scopeValue =
+  "#strings.defaultString(theme.config?.style?.danmaku?.scope, 'guestbook')";
+const visible =
+  `theme.config?.style?.danmaku?.enable == true and ` +
+  `(${scopeValue} == 'all' or ${scopeValue} == '${scope}')`;
+---
+
+<div
+  id="danmaku-slot"
+  class:list={[
+    "danmaku-slot",
+    variant === "card" && "card-base w-full px-6 py-6 md:px-9",
+  ]}
+  data-variant={variant}
+  data-divider={divider}
+  th:if={`\${${visible}}`}
+>
+  <div
+    id="danmaku-stage"
+    class="danmaku-stage"
+    hidden
+    aria-hidden="true"
+    th:style="|--danmaku-height: ${theme.config?.style?.danmaku?.height ?: 180}px|"
+    th:data-group="content.halo.run"
+    th:data-kind={scope === "post" ? "Post" : "SinglePage"}
+    th:data-name={scope === "post"
+      ? "${post != null ? post.metadata.name : ''}"
+      : "${singlePage != null ? singlePage.metadata.name : ''}"}
+  >
+    <!-- hidden 是首帧兜底：脚本确认能取到评论后才会揭开 -->
+  </div>
+</div>
+<!-- 渲染门与容器同一个条件：关闭时脚本也不下载 -->
+<script
+  th:if={`\${${visible}}`}
+  src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/danmaku.js?v=${ASSET_VERSION}`}
+  defer
+  is:inline></script>

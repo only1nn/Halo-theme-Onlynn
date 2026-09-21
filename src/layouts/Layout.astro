@@ -85,6 +85,8 @@ const i18nInlineScript = `<script th:inline="javascript">
     "display.sakuraHint": \`[(#{display.sakuraHint})]\`,
     "display.sakuraOn": \`[(#{display.sakuraOn})]\`,
     "display.sakuraOff": \`[(#{display.sakuraOff})]\`,
+    "display.danmaku": \`[(#{display.danmaku})]\`,
+    "display.danmakuHint": \`[(#{display.danmakuHint})]\`,
     "post.codeCopy": \`[(#{post.codeCopy})]\`,
     "post.codeCopied": \`[(#{post.codeCopied})]\`,
     "post.codeCopyFailed": \`[(#{post.codeCopyFailed})]\`,
@@ -560,7 +562,10 @@ const themeSettingScript = `<script type="application/json" id="theme-config" th
           if (layouts.indexOf(layout) === -1) {
             layout = d.fullscreenLayoutDefault || "classic";
           }
-          document.documentElement.setAttribute("data-fullscreen-layout", layout);
+          document.documentElement.setAttribute(
+            "data-fullscreen-layout",
+            layout,
+          );
         } else {
           localStorage.removeItem("fullscreenLayout");
         }
@@ -570,7 +575,9 @@ const themeSettingScript = `<script type="application/json" id="theme-config" th
           var gradientDefault = d.gradientDefault !== "false";
           var gradientStored = localStorage.getItem("bannerGradient");
           var gradientOn =
-            gradientStored == null ? gradientDefault : gradientStored === "true";
+            gradientStored == null
+              ? gradientDefault
+              : gradientStored === "true";
           body.classList.toggle("gradient-disabled", !gradientOn);
         } else {
           localStorage.removeItem("bannerGradient");
@@ -643,6 +650,16 @@ const themeSettingScript = `<script type="application/json" id="theme-config" th
           localStorage.removeItem("sakura");
         }
 
+        // 弹幕留言访客覆盖：同樱花，幕布与弹幕由 danmaku.js 按类决定取不取评论
+        if (enable && on(d.visitorDanmaku) && d.danmakuDefault === "true") {
+          body.classList.toggle(
+            "danmaku-disabled",
+            localStorage.getItem("danmaku") === "false",
+          );
+        } else {
+          localStorage.removeItem("danmaku");
+        }
+
         if (enable && on(d.visitorWallpaperSettings)) {
           var waveDefault = d.waveDefault !== "false";
           var waveStored = localStorage.getItem("bannerWave");
@@ -675,7 +692,8 @@ const themeSettingScript = `<script type="application/json" id="theme-config" th
       aria-label="Exit focus mode"
       aria-hidden="true"
     >
-      <span class="icon-[material-symbols--close-fullscreen-rounded] text-xl"></span>
+      <span class="icon-[material-symbols--close-fullscreen-rounded] text-xl"
+      ></span>
     </button>
     <script
       src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/reading-focus.js?v=${ASSET_VERSION}`}

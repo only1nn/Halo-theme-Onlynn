@@ -91,7 +91,7 @@ jobs:
             echo "未发现跳过标记，继续同步"
           fi
 
-      # 下载 Release 附件中的主题包（如 onlynn-1.2.4.zip）
+      # 下载 Release 附件中的主题包（如 onlynn-1.0.0.zip）
       - name: Download Release Assets
         if: steps.sync-check.outputs.skipped == 'false'
         env:

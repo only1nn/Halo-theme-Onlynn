@@ -57,6 +57,10 @@
     getDefaultSakura,
     setSakura,
     resetSakura,
+    getStoredDanmaku,
+    getDefaultDanmaku,
+    setDanmaku,
+    resetDanmaku,
     getStoredSidebarPosition,
     getDefaultSidebarPosition,
     setSidebarPosition,
@@ -106,6 +110,10 @@
   let sakura = $state(getStoredSakura());
   const defaultSakura = getDefaultSakura();
   const showSakura = switches.sakura && defaultSakura;
+  /* ── 评论弹幕（访客开关）── 同樱花：后台开启后才在前台出现该开关 */
+  let danmaku = $state(getStoredDanmaku());
+  const defaultDanmaku = getDefaultDanmaku();
+  const showDanmaku = switches.danmaku && defaultDanmaku;
   /* ── 侧栏位置（访客开关）── */
   let sidebarPosition = $state<SidebarPosition>(getStoredSidebarPosition());
   const defaultSidebarPosition = getDefaultSidebarPosition();
@@ -115,7 +123,7 @@
   const hasWallpaperContent = $derived(
     showWallpaperMode || showWallpaper || showFullscreenLayout,
   );
-  const hasEffectsContent = $derived(showSakura);
+  const hasEffectsContent = $derived(showSakura || showDanmaku);
   // 仅一个分区有内容时不显示标签栏，避免单标签的无效切换
   const showTabBar = $derived(
     [hasAppearanceContent, hasWallpaperContent, hasEffectsContent].filter(Boolean)
@@ -324,6 +332,16 @@
   function resetSakuraBtn() {
     resetSakura();
     sakura = getDefaultSakura();
+  }
+
+  function toggleDanmaku() {
+    danmaku = !danmaku;
+    setDanmaku(danmaku);
+  }
+
+  function resetDanmakuBtn() {
+    resetDanmaku();
+    danmaku = getDefaultDanmaku();
   }
 
   function resetFullscreenLayoutBtn() {
@@ -682,17 +700,26 @@
       <div class="section-title mb-3">
         {t("display.tabEffects", "特效")}
         <button aria-label={t("theme.resetDefault", "Reset to Default")} class="btn-regular w-7 h-7 rounded-md active:scale-90 will-change-transform"
-                class:opacity-0={sakura === defaultSakura} class:pointer-events-none={sakura === defaultSakura} on:click={resetSakuraBtn}>
+                class:opacity-0={sakura === defaultSakura && danmaku === defaultDanmaku} class:pointer-events-none={sakura === defaultSakura && danmaku === defaultDanmaku} on:click={() => { resetSakuraBtn(); resetDanmakuBtn(); }}>
           <div class="text-(--btn-content)">
             <div icon="fa6-solid:arrow-rotate-left" class="icon-[fa6-solid--arrow-rotate-left] text-[0.875rem]"></div>
           </div>
         </button>
       </div>
-      <button type="button" class="toggle-row" class:toggle-on={sakura} role="switch" aria-checked={sakura} on:click={toggleSakura}>
-        <span class="icon-[material-symbols--local-florist-outline-rounded] toggle-icon"></span>
-        <span class="toggle-label">{t("display.sakura", "樱花特效")}</span>
-        <span class="toggle" class:toggle-on={sakura}><span class="toggle-knob"></span></span>
-      </button>
+      {#if showSakura}
+        <button type="button" class="toggle-row" class:toggle-on={sakura} role="switch" aria-checked={sakura} on:click={toggleSakura}>
+          <span class="icon-[material-symbols--local-florist-outline-rounded] toggle-icon"></span>
+          <span class="toggle-label">{t("display.sakura", "樱花特效")}</span>
+          <span class="toggle" class:toggle-on={sakura}><span class="toggle-knob"></span></span>
+        </button>
+      {/if}
+      {#if showDanmaku}
+        <button type="button" class="toggle-row" class:toggle-on={danmaku} role="switch" aria-checked={danmaku} on:click={toggleDanmaku}>
+          <span class="icon-[material-symbols--subtitles-outline-rounded] toggle-icon"></span>
+          <span class="toggle-label">{t("display.danmaku", "评论弹幕")}</span>
+          <span class="toggle" class:toggle-on={danmaku}><span class="toggle-knob"></span></span>
+        </button>
+      {/if}
     {/if}
   </div>
 </div>

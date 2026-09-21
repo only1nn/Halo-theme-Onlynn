@@ -1,0 +1,123 @@
+---
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+import DanmakuStage from "../components/DanmakuStage.astro";
+
+/*
+  留言板页面模板（Halo 自定义页面「留言板」）。
+
+  与普通页面模板的区别只在「观感」：
+    · 顶部是一张居中的引导卡片（图标 + 标题 + 一句欢迎语），而不是左对齐的正文标题
+    · 页面正文（若有）渲染在引导语下方，可留空
+    · 评论区固定渲染在最后，并带一层说明
+
+  评论走 Halo 的 <halo:comment kind="SinglePage">，与文章页同一套契约；
+  评论插件未安装或页面关闭评论时整块不渲染。
+*/
+
+const hasContent =
+  "${singlePage.content != null and !#strings.isEmpty(singlePage.content.content)}";
+---
+
+<MainGridLayout
+  title="${singlePage.spec.title + ' - ' + site.title}"
+  description="${singlePage.spec.excerpt.raw ?: site.subtitle}"
+  setOGTypeArticle={true}
+  showToc={false}
+>
+  <div class="mb-4 flex w-full flex-col gap-4">
+    <!-- 引导卡片：弹幕幕布也放在这张卡里（欢迎语下方，一条虚线分隔）。
+         这张卡不受 haloCommentEnabled 影响，弹幕因此不会随评论插件的差异一起消失 -->
+    <section class="card-base onload-animation px-6 py-10 md:px-9">
+      <div class="gb-hero">
+        <span class="gb-hero-icon">
+          <span
+            class="icon-[material-symbols--forum-outline-rounded]"
+            aria-hidden="true"></span>
+        </span>
+        <h1 class="gb-hero-title" th:text="${singlePage.spec.title}">留言板</h1>
+        <p class="gb-hero-text" th:text="#{page.guestbook.intro}">
+          欢迎在这里留下你的足迹，分享你的想法和建议
+        </p>
+      </div>
+      <DanmakuStage scope="guestbook" divider="top" />
+    </section>
+
+    <!-- 页面正文（可选）：判空用 markdown 源（raw）而不是渲染结果 ——
+         Halo 渲染空正文时会输出一个 pjax <style> 块，渲染结果永远非空，
+         用它判空会导致空白卡片 -->
+    <section
+      class="card-base onload-animation px-6 py-6 md:px-9"
+      th:if="${singlePage.content != null and !#strings.isEmpty(singlePage.content.raw)}"
+    >
+      <div
+        id="content"
+        class="custom-md markdown-content prose prose-base max-w-none! dark:prose-invert!"
+        th:classappend="| ${theme.config?.post?.contentDisplay?.content_size} ${theme.config?.post?.contentDisplay?.content_theme}|"
+        th:utext="${singlePage.content.content}"
+      >
+      </div>
+    </section>
+
+    <!-- 评论区：幕布已移到上方引导卡片内，这里只放留言列表 -->
+    <div
+      class="card-base relative z-10 w-full px-6 pb-4 pt-6 md:px-9"
+      id="comment"
+      th:if="${haloCommentEnabled && (singlePage.spec.allowComment != false)}"
+    >
+      <h2
+        class="mb-4 flex items-center text-base font-bold text-black/90 transition dark:text-white/90"
+      >
+        <span class="mr-2 h-4 w-1 rounded-md bg-(--primary)" aria-hidden="true"
+        ></span>
+        <span th:text="#{page.guestbook.commentTitle}">全部留言</span>
+      </h2>
+      <Fragment
+        set:html={'<halo:comment group="content.halo.run" kind="SinglePage" th:attr="name=${singlePage.metadata.name}" />'}
+      />
+    </div>
+  </div>
+
+  <style>
+    /* 本页专用样式：只在留言板生效，配色走主题变量，亮暗两套自动成立 */
+    .gb-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.75rem;
+    }
+
+    .gb-hero-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 9999px;
+      background-color: color-mix(in oklab, var(--primary) 10%, transparent);
+      color: var(--primary);
+      font-size: 1.5rem;
+    }
+
+    .gb-hero-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: rgb(23 23 23);
+    }
+
+    :root.dark .gb-hero-title {
+      color: rgb(245 245 245);
+    }
+
+    .gb-hero-text {
+      max-width: 32rem;
+      font-size: 0.9375rem;
+      line-height: 1.9;
+      color: rgb(0 0 0 / 0.55);
+    }
+
+    :root.dark .gb-hero-text {
+      color: rgb(255 255 255 / 0.55);
+    }
+  </style>
+</MainGridLayout>

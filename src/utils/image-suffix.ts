@@ -111,8 +111,11 @@ export function bannerModeThWith(): string {
  * 供移动端容器渲染条件与其内层 th:with 引用。
  */
 export function bannerThWith(): string {
-  const src =
-    "#strings.defaultString(theme.config?.style?.bannerStyle?.src, '')";
+  // 兜底指向主题自带的示例壁纸：未配置 src 时（新装站点尤其常见）如果留空，
+  // 首屏会是一块纯色背景。BASE_URL 在构建期确定，这里拼进来就不必写死主题名，
+  // 之后再改主题 ID 也不会失效。
+  const defaultBanner = `${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/images/demo-banner.webp`;
+  const src = `#strings.defaultString(theme.config?.style?.bannerStyle?.src, '${defaultBanner}')`;
   return (
     imageSuffixThWith("p?.banner_width ?: 1920") +
     ", " +

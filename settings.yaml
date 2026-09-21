@@ -281,7 +281,6 @@ spec:
     - group: style
       label: 样式设置
       formSchema:
-
         - $formkit: group
           name: displayPanel
           label: 显示设置面板
@@ -304,6 +303,7 @@ spec:
                 cardBorder: true
                 cardFollowTheme: true
                 sakura: true
+                danmaku: true
                 sidebarPosition: true
               children:
                 - $formkit: switch
@@ -369,6 +369,14 @@ spec:
                   label: 樱花特效切换
                   value: true
                   help: "访客可开关飘落的樱花；后台「樱花特效」关闭时前台不显示该开关"
+                - $formkit: switch
+                  name: danmaku
+                  id: visitorStyle_danmaku
+                  key: visitorStyle_danmaku
+                  if: "$get(visitorStyle_enable).value"
+                  label: 弹幕留言切换
+                  value: true
+                  help: "访客可开关评论弹幕；后台「弹幕留言」关闭时前台不显示该开关"
                 - $formkit: switch
                   name: cardFollowTheme
                   id: visitorStyle_cardFollowTheme
@@ -544,7 +552,7 @@ spec:
           label: Banner 样式
           value:
             mode: single
-            src: "/themes/onlynn/assets/images/demo-banner.png"
+            src: "/themes/onlynn/assets/images/demo-banner.webp"
             carousel:
               images: []
               effect: fade
@@ -574,7 +582,7 @@ spec:
               key: banner_src
               if: "$get(banner_mode).value === 'single'"
               label: 图片/视频
-              value: "/themes/onlynn/assets/images/demo-banner.png"
+              value: "/themes/onlynn/assets/images/demo-banner.webp"
               accepts:
                 - "image/*"
                 - "video/mp4"
@@ -772,9 +780,9 @@ spec:
           label: 标题与副标题
           value:
             enable: true
-            title: "Hello, Onlynn!"
+            title: "楠香一隅，自语成章"
             titleFontSize: "3.5rem"
-            subtitles: "生而为人，爱而无畏\n心之所向，素履以往\n保持热爱，奔赴山海"
+            subtitles: "✦在代码与文字间，寻找生活的回响✦"
             subtitleFontSize: "1.5rem"
             subtitleEffect: "typewriter"
           children:
@@ -788,7 +796,7 @@ spec:
               name: title
               if: "$get(bannerText_enable).value"
               label: 标题
-              value: "Hello, Onlynn!"
+              value: "楠香一隅，自语成章"
               help: "Banner 中间显示的标题文字"
             - $formkit: text
               name: titleFontSize
@@ -800,7 +808,7 @@ spec:
               name: subtitles
               if: "$get(bannerText_enable).value"
               label: 副标题
-              value: "生而为人，爱而无畏\n心之所向，素履以往\n保持热爱，奔赴山海"
+              value: "✦在代码与文字间，寻找生活的回响✦"
               help: "每行一条文本，将循环展示"
             - $formkit: text
               name: subtitleFontSize
@@ -989,6 +997,118 @@ spec:
               max: 999
               step: 1
               help: "数值越大越靠前；需小于导航栏与面板，建议 100 左右"
+        - $formkit: group
+          name: danmaku
+          label: 弹幕留言
+          value:
+            enable: false
+            scope: guestbook
+            speed: 14
+            rows: 5
+            gap: 24
+            opacity: 0.9
+            showAvatar: true
+            maxItems: 30
+            height: 180
+            loop: true
+            clickAction: scroll
+          children:
+            - $formkit: switch
+              name: enable
+              id: danmaku_enable
+              label: 启用
+              value: false
+              help: "把页面上已有的评论渲染成从右向左滚动的弹幕；关闭时连脚本都不下载"
+            - $formkit: select
+              name: scope
+              if: "$get(danmaku_enable).value"
+              label: 显示范围
+              value: guestbook
+              options:
+                - label: 仅留言板
+                  value: guestbook
+                - label: 仅文章页
+                  value: post
+                - label: 所有带评论的页面
+                  value: all
+              help: "弹幕幕布出现在评论区上方，只对能取到评论的页面生效"
+            - $formkit: number
+              name: speed
+              if: "$get(danmaku_enable).value"
+              label: 滚动基准秒数
+              value: 14
+              min: 4
+              max: 40
+              step: 1
+              help: "一条弹幕横穿幕布所需秒数；数值越小越快，建议 8–30"
+            - $formkit: number
+              name: rows
+              if: "$get(danmaku_enable).value"
+              label: 轨道数
+              value: 5
+              min: 1
+              max: 12
+              step: 1
+              help: "弹幕分几行滚动；窄屏会自动减半。轨道总高超过幕布高度时会自动下调，不会叠在一起"
+            - $formkit: number
+              name: gap
+              if: "$get(danmaku_enable).value"
+              label: 同轨最小间距
+              value: 24
+              min: 0
+              max: 120
+              step: 4
+              help: "同一条轨道上前后两条弹幕之间至少留出的空隙（像素）"
+            - $formkit: number
+              name: opacity
+              if: "$get(danmaku_enable).value"
+              label: 不透明度
+              value: 0.9
+              min: 0.3
+              max: 1
+              step: 0.05
+              help: "弹幕胶囊的不透明度，0.3–1.0"
+            - $formkit: switch
+              name: showAvatar
+              if: "$get(danmaku_enable).value"
+              label: 显示头像
+              value: true
+              help: "在弹幕里显示评论者头像；没有头像时用昵称首字代替"
+            - $formkit: number
+              name: maxItems
+              if: "$get(danmaku_enable).value"
+              label: 最多显示条数
+              value: 30
+              min: 5
+              max: 100
+              step: 5
+              help: "按时间倒序取最近若干条评论，过多会显得拥挤"
+            - $formkit: number
+              name: height
+              if: "$get(danmaku_enable).value"
+              label: 幕布高度
+              value: 180
+              min: 80
+              max: 360
+              step: 10
+              help: "弹幕区域高度（像素），只需容纳设定的轨道数即可"
+            - $formkit: switch
+              name: loop
+              if: "$get(danmaku_enable).value"
+              label: 循环播放
+              value: true
+              help: "评论播完后重新开始，保持幕布不空着；关闭则播完即停"
+            - $formkit: select
+              name: clickAction
+              if: "$get(danmaku_enable).value"
+              label: 点击弹幕
+              value: scroll
+              options:
+                - label: 滚动到评论区
+                  value: scroll
+                - label: 不响应点击
+                  value: none
+              help: "评论插件的评论锚点由插件自身决定，无法保证逐条定位，因此默认只滚到评论区"
         - $formkit: group
           name: animationSpeed
           label: 动画速度
@@ -2404,6 +2524,107 @@ spec:
                       label: 主题色
                       value: ""
                       help: "图标底色与进度条颜色，留空使用主题色"
+        - $formkit: group
+          name: sponsor
+          label: 打赏支持页
+          help: "请先在「页面 → 自定义页面」中创建对应页面（模板选「打赏支持」），然后在此配置页面内容"
+          children:
+            - $formkit: text
+              name: subtitle
+              label: 副标题
+              value: "你的支持是我持续创作的动力"
+              help: "显示在页面标题下方，留空则使用默认文案"
+            - $formkit: textarea
+              name: intro
+              label: 引导文案
+              value: "如果我的内容对你有帮助，欢迎通过以下方式打赏我，你的支持是我持续创作的动力！"
+              help: "页面顶部的主文案，留空则使用默认文案"
+            - $formkit: textarea
+              name: note
+              label: 打赏用途
+              value: "你的打赏将用于服务器维护、内容创作和功能开发，帮助我持续提供优质内容。"
+              help: "说明打赏会被用在哪里；留空则整块不显示"
+            - $formkit: array
+              name: methods
+              label: 打赏方式
+              help: "每项一张卡片：填了二维码就展示收款码，只填链接就显示「前往打赏」按钮（两者都填时优先二维码）。留空的项不会出现在前台"
+              value:
+                - name: 微信
+                  description: 使用微信扫码打赏
+                  qr: ""
+                  url: ""
+                - name: 支付宝
+                  description: 使用支付宝扫码打赏
+                  qr: ""
+                  url: ""
+              children:
+                - $formkit: text
+                  name: name
+                  label: 名称
+                  validation: required
+                  help: "如：微信 / 支付宝 / 爱发电 / ko-fi"
+                - $formkit: textarea
+                  name: description
+                  label: 描述
+                  help: "卡片里的一句话说明，如「使用微信扫码打赏」"
+                - $formkit: attachment
+                  name: qr
+                  label: 收款二维码
+                  accepts:
+                    - "image/*"
+                  aspectRatio: "1/1"
+                  value: ""
+                  help: "上传收款二维码图片（建议 1:1 正方形）；留空则改用下面的链接按钮"
+                - $formkit: text
+                  name: url
+                  label: 打赏链接
+                  value: ""
+                  help: "外链打赏页地址（如爱发电 / ko-fi）；填了就在卡片下方显示「前往打赏」按钮"
+                - $formkit: iconify
+                  name: icon
+                  label: 图标
+                  format: svg
+                  help: "卡片图标；留空则按名称自动匹配（微信 / 支付宝用品牌图标，ko-fi 用咖啡杯，其余用爱心）"
+                - $formkit: color
+                  name: color
+                  label: 主题色
+                  value: ""
+                  help: "图标与卡片的强调色，留空使用主题色"
+            - $formkit: switch
+              name: showSponsors
+              label: 显示打赏列表
+              value: true
+              help: "关闭后前台不显示「打赏列表」整块"
+            - $formkit: array
+              name: sponsors
+              label: 打赏列表
+              help: "按你想展示的顺序添加；名称填「匿名」即可匿名展示"
+              value: []
+              children:
+                - $formkit: text
+                  name: name
+                  label: 名称
+                  validation: required
+                - $formkit: text
+                  name: amount
+                  label: 金额
+                  help: "自由填写，如 ¥50 / 一杯咖啡"
+                - $formkit: date
+                  name: date
+                  label: 日期
+                - $formkit: attachment
+                  name: avatar
+                  label: 头像
+                  accepts:
+                    - "image/*"
+                  aspectRatio: "1/1"
+                  value: ""
+                  help: "留空则用名称首字代替"
+            - $formkit: textarea
+              name: thanks
+              label: 结尾致谢
+              value: "谢谢每一位支持过我的朋友，我会继续写下去。"
+              help: "显示在打赏列表下方；留空则不显示"
     - group: footer
       label: 页脚
       formSchema:

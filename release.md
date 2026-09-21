@@ -1,4 +1,4 @@
-## Onlynn v1.2.4
+## Onlynn v1.0.0
 
 Onlynn 的首个公开版本 —— 一款卡片式的 Halo 2 博客主题，以
 [Ethereal](https://github.com/AloneNanNan/halo-theme-ethereal) 为基座，
@@ -16,7 +16,7 @@ Onlynn 的首个公开版本 —— 一款卡片式的 Halo 2 博客主题，以
 
 ### 安装
 
-1. 下载下方的 `onlynn-1.2.4.zip`
+1. 下载下方的 `onlynn-1.0.0.zip`
 2. Halo 后台 →「外观」→「主题」→ 安装 → 上传 zip
 3. 启用后在「主题 → 设置」中按需配置
 

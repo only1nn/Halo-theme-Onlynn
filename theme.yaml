@@ -7,12 +7,16 @@ spec:
   author:
     name: nn在发呆
   description: 一款为 Halo 打造的卡片式博客主题，以 Ethereal 为基础，按 Firefly 的美学补齐外观与交互定制能力。
-  logo: /themes/onlynn/assets/images/favicon-light-192.png
+  # 主题列表卡片上的图标：用与默认头像同一张图，避免卡片显示一个与主题无关的占位图标
+  logo: /themes/onlynn/assets/images/demo-avatar.png
   homepage: https://github.com/only1nn/halo-theme-Onlynn#readme
   repo: https://github.com/only1nn/halo-theme-Onlynn
   issues: https://github.com/only1nn/halo-theme-Onlynn/issues
   customTemplates:
     page:
+      - name: "留言板"
+        description: "留言板页面：居中的引导卡片 + 评论区"
+        file: "guestbook.html"
       - name: "RSS 订阅"
         description: "RSS 订阅页：订阅地址 + 最新文章 + RSS 说明"
         file: "rss.html"
@@ -28,9 +32,12 @@ spec:
       - name: "技能"
         description: "个人技能展示页面（在主题设置的「技能」Tab 中配置数据）"
         file: "skills.html"
+      - name: "打赏支持"
+        description: "打赏支持页面：引导文案 + 打赏方式（收款码 / 外链）+ 打赏列表"
+        file: "sponsor.html"
   settingName: "onlynn-setting"
   configMapName: "onlynn-configmap"
-  version: "1.2.4"
+  version: "1.0.2"
   requires: ">=2.25.0"
   license:
     - name: "MIT"

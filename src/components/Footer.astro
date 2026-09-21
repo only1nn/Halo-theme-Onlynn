@@ -19,29 +19,29 @@ const currentYear = new Date().getFullYear();
        单位文案由 i18n 渲染进 data-format（脚本不硬编码中文）；
        上线时间写进 data-start，秒数由 site-uptime.js 实时更新。
        脚本未执行时保留服务端占位符，不会显示错误的数字 -->
-  <Fragment
+  <!-- th:if 必须挂在 <a> 上：Astro 的 <Fragment> 是编译期构造、不产出元素，
+       挂在它上面的 th:* 会被**静默丢弃**（条件与元素一起失效） -->
+  <a
+    id="site-uptime"
     th:if="${theme.config?.footer?.runningTime?.enable == true and !#strings.isEmpty(theme.config?.footer?.runningTime?.startDate)}"
+    th:href="${#strings.isEmpty(theme.config?.footer?.runningTime?.link) ? null : theme.config?.footer?.runningTime?.link}"
+    th:data-start="${theme.config?.footer?.runningTime?.startDate}"
+    th:data-format="#{footer.uptimeFormat}"
+    class="link mt-2 mb-3 inline-flex items-center gap-x-1 font-medium text-(--primary)"
   >
-    <a
-      id="site-uptime"
-      th:href="${#strings.isEmpty(theme.config?.footer?.runningTime?.link) ? null : theme.config?.footer?.runningTime?.link}"
-      th:data-start="${theme.config?.footer?.runningTime?.startDate}"
-      th:data-format="#{footer.uptimeFormat}"
-      class="link mt-2 mb-3 inline-flex items-center gap-x-1 font-medium text-(--primary)"
-    >
-      <span
-        class="icon-[material-symbols--schedule-outline-rounded] text-[1rem]"
-        aria-hidden="true"></span>
-      <span th:text="#{footer.runningTime}">本站已运行</span>
-      <span data-uptime-value>--</span>
-    </a>
-    <!-- 秒数实时走动需要脚本；关掉该功能时不下载。Footer 在布局里渲染两次
+    <span
+      class="icon-[material-symbols--schedule-outline-rounded] text-[1rem]"
+      aria-hidden="true"></span>
+    <span th:text="#{footer.runningTime}">本站已运行</span>
+    <span data-uptime-value>--</span>
+  </a>
+  <!-- 秒数实时走动需要脚本；关掉该功能时不下载。Footer 在布局里渲染两次
          （移动端 / 桌面端各一份），脚本自身有 window 级幂等守卫，重复引入无副作用 -->
-    <script
-      src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/site-uptime.js?v=${ASSET_VERSION}`}
-      defer
-      is:inline></script>
-  </Fragment>
+  <script
+    th:if="${theme.config?.footer?.runningTime?.enable == true and !#strings.isEmpty(theme.config?.footer?.runningTime?.startDate)}"
+    src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/site-uptime.js?v=${ASSET_VERSION}`}
+    defer
+    is:inline></script>
 
   <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
     <!-- Astro 编译会剥掉元素间的空白，行内空隙必须用 {" "} 显式补回（见下方 Powered by 行） -->

@@ -16,6 +16,7 @@ import "../styles/external-link-modal.css";
 import "../styles/link-apply-modal.css";
 import "../styles/profile-status.css";
 import "../styles/code-block.css";
+import "../styles/danmaku.css";
 
 // ── 第三方 ──
 import "overlayscrollbars/styles/overlayscrollbars.css";

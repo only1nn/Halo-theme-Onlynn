@@ -164,6 +164,7 @@ export interface VisitorSwitches {
   cardBorder: boolean;
   cardFollowTheme: boolean;
   sakura: boolean;
+  danmaku: boolean;
   sidebarPosition: boolean;
 }
 
@@ -195,6 +196,7 @@ function readVisitorSwitches(): VisitorSwitches {
     cardBorder: enable && carrierBool("visitorCardBorder", true),
     cardFollowTheme: enable && carrierBool("visitorCardFollowTheme", true),
     sakura: enable && carrierBool("visitorSakura", true),
+    danmaku: enable && carrierBool("visitorDanmaku", true),
     sidebarPosition: enable && carrierBool("visitorSidebarPosition", true),
   };
 }
@@ -547,8 +549,8 @@ export function setFullscreenLayout(layout: FullscreenLayout): void {
 export type SidebarPosition = "left" | "right";
 
 export function getDefaultSidebarPosition(): SidebarPosition {
-  const v = document.getElementById("config-carrier")?.dataset
-    .sidebarPositionDefault;
+  const v =
+    document.getElementById("config-carrier")?.dataset.sidebarPositionDefault;
   return v === "right" ? "right" : "left";
 }
 
@@ -597,6 +599,31 @@ export function applySakura(enabled: boolean): void {
 export function setSakura(enabled: boolean): void {
   localStorage.setItem("sakura", String(enabled));
   applySakura(enabled);
+}
+
+/* ── 评论弹幕 ──
+   与樱花同款：默认值来自后台「弹幕留言 → 启用」，幕布内容由 danmaku.js
+   按 body 类与自有配置决定，这里只维护 body 类与事件 */
+
+export function getDefaultDanmaku(): boolean {
+  return carrierBool("danmakuDefault", false);
+}
+
+export function getStoredDanmaku(): boolean {
+  if (!getVisitorSwitches().danmaku) return getDefaultDanmaku();
+  const stored = localStorage.getItem("danmaku");
+  return stored == null ? getDefaultDanmaku() : stored === "true";
+}
+
+export function applyDanmaku(enabled: boolean): void {
+  document.body.classList.toggle("danmaku-disabled", !enabled);
+  // 脚本监听此事件决定取评论 / 收起幕布
+  window.dispatchEvent(new CustomEvent("danmakuChange", { detail: enabled }));
+}
+
+export function setDanmaku(enabled: boolean): void {
+  localStorage.setItem("danmaku", String(enabled));
+  applyDanmaku(enabled);
 }
 
 /* ── 卡片边框 / 卡片跟随主题色 ── */
@@ -829,6 +856,11 @@ export function resetCardFollowTheme(): void {
 export function resetSakura(): void {
   localStorage.removeItem("sakura");
   applySakura(getDefaultSakura());
+}
+
+export function resetDanmaku(): void {
+  localStorage.removeItem("danmaku");
+  applyDanmaku(getDefaultDanmaku());
 }
 
 export function resetSidebarPositionToDefault(): void {

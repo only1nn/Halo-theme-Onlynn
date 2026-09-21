@@ -1,0 +1,242 @@
+---
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+import PageHeader from "../components/control/PageHeader.astro";
+
+/*
+  打赏支持页（Halo 自定义页面「打赏支持」）。
+
+  三块内容，全部由主题设置驱动（settings.yaml 的「扩展页面 → 打赏支持页」）：
+    1. 引导卡片 —— 页头 + 引导文案 + 打赏用途说明（用途留空则整块不显示）
+    2. 打赏方式   —— 每项一张卡片：填了二维码就展示收款码，只填链接就显示「前往打赏」
+    3. 打赏列表   —— 名称 / 金额 / 日期 / 头像，可在后台逐条维护，也可整块关掉
+
+  纯服务端渲染，没有配套脚本：打赏页不需要交互，少一个脚本就少一次请求。
+
+  SpEL 约定（与 timeline / skills 一致，勿改）：
+    · 计数与判空走字面量投影 + #aggregates.sum(...)，不要在投影里引用上下文变量
+      （Map 条目会遮蔽上下文，导致 #lists.contains(null, ...) 抛异常）
+    · 配置项可能整组缺失（站点没保存过设置时），所以每处引用都要带 ?. 与兜底
+
+  写法约定（踩过坑）：
+    · 引号属性里的 ${...} 是**原样输出**的，不能用 JS 常量拼；要用常量就走
+      JS 表达式属性（th:xx={`...`}），并把 ${} 一起写进模板串
+    · 组件 prop（titleExpr 等）要的是完整表达式字符串，照 skills.astro 的写法内联
+*/
+
+const cfg = "theme.config?.extendPages?.sponsor";
+const methods = `${cfg}?.methods`;
+const sponsors = `${cfg}?.sponsors`;
+
+/* 已配置的打赏方式数：有二维码或链接才算数，否则那张卡片不出现。
+   ⚠ #aggregates.sum 对**空集合返回 null**（不是 0），所以取值处一律再套一层 ?: 0，
+     否则「把方法列表整条删空」时判等会失败、空态提示不显示 */
+const configuredCount =
+  `(${methods} != null ? #aggregates.sum(${methods}.![` +
+  `(qr != null and !#strings.isEmpty(qr)) or (url != null and !#strings.isEmpty(url)) ? 1 : 0]) : 0) ?: 0`;
+/* 一个都没配 → 空态提示，不留空白网格 */
+const noMethods = `\${(${configuredCount}) == 0}`;
+/* 打赏人次：直接用后台列表长度，不额外存字段 */
+const sponsorCount = `${sponsors} == null ? 0 : #lists.size(${sponsors})`;
+const hasSponsors = `\${${cfg}?.showSponsors != false and (${sponsorCount}) > 0}`;
+
+/*
+  方式图标的兜底匹配：微信 / 支付宝用 fa6-brands 的品牌图标（主题已安装该图标集），
+  ko-fi 用咖啡杯、爱发电用「捧心」、其余用爱心。
+  ⚠ 图标类名必须是这里的字面量，Tailwind 的内容扫描才生成得到规则；
+    只能用 package.json 里装过的图标集（fa6-brands / fa6-solid / mdi / mingcute /
+    material-symbols / tabler），引了没装的集子会静默渲染成 0 宽的空盒子。
+*/
+const iconFallback =
+  `\${#strings.contains(name, '微信') ? 'icon-[fa6-brands--weixin]' : ` +
+  `(#strings.contains(name, '支付宝') ? 'icon-[fa6-brands--alipay]' : ` +
+  `(#strings.contains(name, '发电') ? 'icon-[fa6-solid--hand-holding-heart]' : ` +
+  `(#strings.contains(name, 'ko-fi') or #strings.contains(name, 'kofi') ? 'icon-[fa6-solid--mug-hot]' : ` +
+  `'icon-[fa6-solid--heart]')))}`;
+---
+
+<MainGridLayout
+  title="${singlePage.spec.title + ' - ' + site.title}"
+  description="#{page.sponsor.description(${site.title})}"
+>
+  <!-- ① 引导卡片 -->
+  <section class="card-base onload-animation mb-4 px-6 py-6 md:px-9">
+    <PageHeader
+      containerClass="mb-6 flex flex-col items-start gap-3 md:flex-row md:items-end md:justify-between"
+      titleExpr="${singlePage.spec.title}"
+      title="打赏支持"
+      iconClass="icon-[material-symbols--favorite]"
+      labelExpr="#{page.sponsor.title}"
+      label="打赏支持"
+      subExpr="${theme.config?.extendPages?.sponsor?.subtitle ?: #messages.msg('page.sponsor.subtitle')}"
+      sub="你的支持是我持续创作的动力"
+    />
+
+    <p
+      class="text-base leading-relaxed text-75"
+      th:text={`\${${cfg}?.intro ?: #messages.msg('page.sponsor.intro')}`}
+    >
+      如果我的内容对你有帮助，欢迎通过以下方式打赏我，你的支持是我持续创作的动力！
+    </p>
+
+    <!-- 打赏用途：虚线框小卡片，留空则整块不显示 -->
+    <div
+      th:if={`\${not #strings.isEmpty(${cfg}?.note)}`}
+      class="mt-5 flex items-start gap-3 rounded-xl border border-dashed border-(--primary)/25 bg-(--primary)/5 px-4 py-3"
+    >
+      <span
+        class="icon-[material-symbols--volunteer-activism-outline] mt-0.5 shrink-0 text-lg text-(--primary)"
+        aria-hidden="true"></span>
+      <p class="text-sm leading-relaxed text-75" th:text={`\${${cfg}?.note}`}>
+        你的打赏将用于服务器维护、内容创作和功能开发，帮助我持续提供优质内容。
+      </p>
+    </div>
+  </section>
+
+  <!-- ② 打赏方式 -->
+  <section class="card-base onload-animation mb-4 px-6 py-6 md:px-9">
+    <h2 class="mb-5 flex items-center gap-2 text-lg font-bold text-90">
+      <span
+        class="icon-[material-symbols--qr-code-2-rounded] text-lg text-(--primary)"
+        aria-hidden="true"></span>
+      <span th:text="#{page.sponsor.methods}">打赏方式</span>
+    </h2>
+
+    <!-- 两列封顶：再多的列会把二维码挤小到不好扫 -->
+    <div class="grid gap-4 sm:grid-cols-2">
+      <article
+        th:each={`m : \${${methods}}`}
+        th:if="${(m.qr != null and !#strings.isEmpty(m.qr)) or (m.url != null and !#strings.isEmpty(m.url))}"
+        th:with="name=${m.name ?: ''}, hasQr=${m.qr != null and !#strings.isEmpty(m.qr)}, hasUrl=${m.url != null and !#strings.isEmpty(m.url)}"
+        class="flex flex-col items-center rounded-xl border border-black/8 bg-black/2 px-5 py-5 text-center transition dark:border-white/10 dark:bg-white/5"
+      >
+        <!-- 头部：小图标与名称横排一行（对齐 Firefly 的比例），说明紧随其后。
+             不要做成「大方块图标 + 名称」竖排 —— 图标块会喧宾夺主，卡片也高一块 -->
+        <div class="mb-1.5 flex items-center justify-center gap-1.5">
+          <span
+            th:if="${m.icon != null and m.icon.value != null}"
+            class="text-xl leading-none"
+            th:style="|color: ${#strings.isEmpty(m.color) ? 'var(--primary)' : m.color}|"
+            th:utext="${m.icon.value}"></span>
+          <span
+            th:unless="${m.icon != null and m.icon.value != null}"
+            class="text-xl leading-none"
+            th:style="|color: ${#strings.isEmpty(m.color) ? 'var(--primary)' : m.color}|"
+            th:classappend={iconFallback}></span>
+          <h3 class="text-base font-bold text-90" th:text="${m.name}">微信</h3>
+        </div>
+
+        <p
+          th:if="${not #strings.isEmpty(m.description)}"
+          class="mb-4 text-sm leading-relaxed text-50"
+          th:text="${m.description}"
+        >
+          使用微信扫码打赏
+        </p>
+
+        <!-- 二维码形态：宽度跟随卡片、始终正方形并封顶 10rem，
+             固定 h-40 w-40 在窄卡片里会被 flex 压扁（曾实测被挤成 91×160） -->
+        <div
+          th:if="${hasQr}"
+          class="mt-auto w-full max-w-40 shrink-0 rounded-xl bg-white p-2 shadow-sm"
+        >
+          <img
+            class="aspect-square w-full rounded-lg object-contain"
+            th:src="${m.qr}"
+            th:alt="${m.name}"
+            loading="lazy"
+          />
+        </div>
+
+        <!-- 外链形态（两者都填时优先二维码） -->
+        <a
+          th:if="${not hasQr and hasUrl}"
+          th:href="${m.url}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-card mt-auto inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold"
+        >
+          <span
+            class="icon-[material-symbols--open-in-new-rounded] text-base"
+            aria-hidden="true"></span>
+          <span th:text="#{page.sponsor.go}">前往打赏</span>
+        </a>
+      </article>
+    </div>
+
+    <!-- 空态：一个都没配时不留空白网格 -->
+    <div
+      th:if={noMethods}
+      class="flex flex-col items-center gap-3 rounded-xl border border-dashed border-black/10 py-10 text-center dark:border-white/12"
+    >
+      <span
+        class="icon-[material-symbols--coffee-outline] text-3xl text-(--primary)"
+        aria-hidden="true"></span>
+      <p class="text-sm text-50" th:text="#{page.sponsor.empty}">
+        博主还没有配置打赏方式，感谢你的心意。
+      </p>
+    </div>
+  </section>
+
+  <!-- ③ 打赏列表 -->
+  <section
+    th:if={hasSponsors}
+    class="card-base onload-animation px-6 py-6 md:px-9"
+  >
+    <h2 class="mb-5 flex items-center gap-2 text-lg font-bold text-90">
+      <span
+        class="icon-[material-symbols--redeem-rounded] text-lg text-(--primary)"
+        aria-hidden="true"></span>
+      <span th:text="#{page.sponsor.sponsors}">打赏列表</span>
+      <!-- 人次徽章：数量由后台列表长度算出，不额外存字段 -->
+      <span
+        class="rounded-md bg-(--primary)/10 px-2 py-0.5 text-xs font-medium text-(--primary)"
+        th:text={`\${${sponsorCount}}`}>0</span
+      >
+    </h2>
+
+    <ul class="flex flex-col gap-2">
+      <li
+        th:each={`s : \${${sponsors}}`}
+        class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-(--btn-plain-bg-hover)"
+      >
+        <img
+          th:if="${s.avatar != null and !#strings.isEmpty(s.avatar)}"
+          class="h-10 w-10 shrink-0 rounded-full object-cover"
+          th:src="${s.avatar}"
+          th:alt="${s.name}"
+          loading="lazy"
+        />
+        <span
+          th:unless="${s.avatar != null and !#strings.isEmpty(s.avatar)}"
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--primary)/12 text-sm font-bold text-(--primary)"
+          th:text="${#strings.isEmpty(s.name) ? '?' : #strings.substring(s.name, 0, 1)}"
+          >匿</span
+        >
+
+        <span
+          class="min-w-0 flex-1 truncate text-sm font-medium text-90"
+          th:text="${s.name}">匿名用户</span
+        >
+
+        <span
+          th:if="${not #strings.isEmpty(s.amount)}"
+          class="shrink-0 text-sm font-bold text-(--primary)"
+          th:text="${s.amount}">¥50</span
+        >
+        <span
+          th:if="${not #strings.isEmpty(s.date)}"
+          class="shrink-0 text-xs text-30"
+          th:text="${s.date}">2025-10-01</span
+        >
+      </li>
+    </ul>
+
+    <p
+      th:if={`\${not #strings.isEmpty(${cfg}?.thanks)}`}
+      class="mt-5 border-t border-dashed border-black/8 pt-4 text-center text-sm text-50 dark:border-white/10"
+      th:text={`\${${cfg}?.thanks}`}
+    >
+      谢谢每一位支持过我的朋友，我会继续写下去。
+    </p>
+  </section>
+</MainGridLayout>

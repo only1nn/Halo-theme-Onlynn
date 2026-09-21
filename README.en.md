@@ -55,6 +55,7 @@ never breaks a page
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Theme settings](#theme-settings)
+- [Menus and paths](#menus-and-paths)
 - [Plugin compatibility](#plugin-compatibility)
 - [Building from source](#building-from-source)
 - [Directory structure](#directory-structure)
@@ -105,6 +106,14 @@ never breaks a page
 - **Sakura effect**: petals drifting across the screen, drawn procedurally (no bundled
   image assets of unclear provenance), up to 100 petals, respects
   `prefers-reduced-motion`, pauses when the page is hidden
+- **Comment danmaku**: turns that page's existing comments into capsules scrolling right
+  to left. On the guestbook it lives inside the "guestbook" welcome card (below the
+  welcome line, separated by a dashed rule); on posts it gets its own card.
+  It reads Halo's public comment API
+  (never scrapes the comment DOM, so a plugin upgrade cannot break it), the capsules
+  follow your theme colour in both light and dark mode, and the site owner's own
+  comments get their own highlight. Hovering pauses, clicking scrolls to the comments.
+  Requires a comment plugin (see "Plugin compatibility")
 - **Wave at the banner footer**, gradient transition, wallpaper carousel
 - **Mobile bottom navigation**: a fixed bar whose items (home / archives / categories /
   tags / search / top) are individually configurable; the page reserves space for it and
@@ -121,6 +130,10 @@ table of contents
 
 - **RSS subscription page**: feed URL (one-click copy with inline feedback), recommended
   readers, latest posts, and an explainer
+- **Sponsor page**: intro copy, ways to support (WeChat / Alipay QR codes, or outbound
+  links such as Afdian / ko-fi) and a supporter list (name / amount / date / avatar, can
+  be switched off entirely). Everything is maintained in the admin; the page is fully
+  server-rendered
 - Page templates for the Moments, Timeline, Skills and Wishes plugins
 
 ### Site and ecosystem
@@ -142,11 +155,11 @@ table of contents
 
 ## Requirements
 
-| Dependency | Version |
-| --- | --- |
-| Halo | >= 2.25.0 |
+| Dependency                     | Version                                     |
+| ------------------------------ | ------------------------------------------- |
+| Halo                           | >= 2.25.0                                   |
 | Node.js (only for development) | >= 22.12.0 (24.x recommended, see `.nvmrc`) |
-| pnpm (only for development) | >= 10 |
+| pnpm (only for development)    | >= 10                                       |
 
 ## Installation
 
@@ -162,20 +175,134 @@ table of contents
 
 The settings page is organised into 10 groups. The ones you will touch most:
 
-| Group | What it configures |
-| --- | --- |
-| **Layout** | Page layout (two/three column), mobile bottom bar, banner mode, post card layout, menu bar, floating buttons, welcome popup |
-| **Style** | **Display settings panel** (visitor permissions + defaults), banner and wallpaper, title and subtitle, homepage social links, colour scheme, language, style switches, sakura, animation speed, external fonts |
-| **Sidebar** | Which widgets go in the left and right columns, plus per-widget options |
-| **Post** | License card, related posts, article meta (word count / reading time), code blocks, content display, TOC, excerpt, action bar (including focus mode) |
-| **Extra pages** | Moments, timeline, skills, RSS subscription page |
-| **Footer** | Site uptime, ICP/PSB filing info, links, custom links, footer friend links |
+| Group           | What it configures                                                                                                                                                                                                              |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Layout**      | Page layout (two/three column), mobile bottom bar, banner mode, post card layout, menu bar, floating buttons, welcome popup                                                                                                     |
+| **Style**       | **Display settings panel** (visitor permissions + defaults), banner and wallpaper, title and subtitle, homepage social links, colour scheme, language, style switches, sakura, comment danmaku, animation speed, external fonts |
+| **Sidebar**     | Which widgets go in the left and right columns, plus per-widget options                                                                                                                                                         |
+| **Post**        | License card, related posts, article meta (word count / reading time), code blocks, content display, TOC, excerpt, action bar (including focus mode)                                                                            |
+| **Extra pages** | Moments, timeline, skills, RSS subscription page, sponsor page                                                                                                                                                                  |
+| **Footer**      | Site uptime, ICP/PSB filing info, links, custom links, footer friend links                                                                                                                                                      |
 
 > **Style → Display settings panel is the single place for appearance configuration.**
 > The upper half controls what visitors may change; the lower half holds the defaults for
 > those controls. To make every visitor see the same style, turn off the "allow visitors
 > to switch styles" master switch — the front-end entry disappears and no per-browser
 > state exists any more.
+
+### Comment danmaku options
+
+Everything under Style → Comment danmaku:
+
+| Field           | Default            | Notes                                                                                                                                                                                                         |
+| --------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Enable          | off                | Master switch. When off the stage is not rendered and `danmaku.js` is not even downloaded                                                                                                                     |
+| Scope           | Guestbook only     | Guestbook only / posts only / every page with comments                                                                                                                                                        |
+| Scroll duration | 14                 | Seconds for one capsule to cross the stage; smaller is faster. Every capsule moves at the same speed, so long comments do not overtake short ones                                                             |
+| Lanes           | 5                  | How many rows to scroll in. Halved on narrow screens; if the stage is too short for the lanes you asked for, the count is lowered further so capsules never stack                                             |
+| Minimum gap     | 24                 | Least number of pixels between two capsules in the same lane                                                                                                                                                  |
+| Opacity         | 0.9                | Capsule opacity                                                                                                                                                                                               |
+| Show avatar     | on                 | Uses the avatar when there is one; email guests have none, so the first character of their name is used with a colour derived from a hash of that name                                                        |
+| Max items       | 30                 | Takes the most recent N comments, newest first                                                                                                                                                                |
+| Stage height    | 180                | Pixels — only needs to fit the number of lanes                                                                                                                                                                |
+| Loop            | on                 | Restarts after the last comment so the stage never sits empty                                                                                                                                                 |
+| Click action    | Scroll to comments | A comment plugin's per-comment anchors live inside its own shadow root and are not portable across providers, so by default a click just scrolls to the comment section. Can also be set to no click reaction |
+
+Visitors can toggle it themselves under Display settings → Effects, provided
+"Visitor-adjustable style → Comment danmaku" is on.
+
+### Sponsor page options
+
+Everything under Extra pages → Sponsor page:
+
+| Field               | Notes                                                                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Subtitle            | Shown under the page title; falls back to the default copy                                                                                                |
+| Intro copy          | The lead paragraph; falls back to the default copy                                                                                                        |
+| Where it goes       | What the money is used for; leave empty to hide the block                                                                                                 |
+| Support methods     | One card each. **A QR image shows the code; a URL alone shows a "Support now" button** (QR wins when both are set). A method with neither is not rendered |
+| Show supporter list | Turn off to hide the whole block                                                                                                                          |
+| Supporter list      | Per row: name / amount / date / avatar. Name it "匿名" to stay anonymous; without an avatar the first character of the name is used                       |
+| Closing thanks      | Shown under the supporter list; leave empty to hide                                                                                                       |
+
+Leaving a method's **icon** empty matches it by name: WeChat / Alipay get brand icons,
+names containing 发电 get a hand-holding-heart, ko-fi gets a coffee cup, everything else a
+heart — or pick one yourself from the icon picker.
+
+> When no method is configured at all the page shows a short "no support methods yet"
+> note instead of leaving an empty grid.
+
+## Menus and paths
+
+When creating a menu item in Halo's admin (Appearance → Menus), **just put the path in the
+"Link" field** (e.g. `/archives`) — Halo prepends your site domain. A full external URL
+(`https://example.com`) also works; tick "open in new window" for those. Menu items can
+carry an Iconify icon too (the theme registers the menu annotation, so the field appears
+in the menu item form).
+
+Below is every reachable path the theme provides, grouped by where it comes from.
+
+### 1. Built into the theme (available immediately)
+
+| Menu name    | Link value           | Notes                                                |
+| ------------ | -------------------- | ---------------------------------------------------- |
+| Home         | `/`                  | Site home                                            |
+| Archives     | `/archives`          | All posts, newest first                              |
+| Categories   | `/categories`        | Category overview                                    |
+| Tags         | `/tags`              | Tag overview                                         |
+| One category | `/categories/{slug}` | Replace `{slug}` with the category slug              |
+| One tag      | `/tags/{slug}`       | Same as above                                        |
+| One post     | `/archives/{slug}`   | A post's permalink                                   |
+| Custom page  | `/{slug}`            | Create it under "Pages"; `{slug}` is the page's slug |
+
+> The actual URLs follow the **permalink rules** in Settings → Post. The values above are
+> the defaults (posts at `/archives/{slug}`, pages at `/{slug}`). If you changed the rules,
+> use whatever the site actually serves.
+
+### 2. Page templates the theme ships (create the page yourself)
+
+Go to Pages → New, pick the template under **Advanced → Custom template**, and set the
+slug to the suggested value:
+
+| Template                        | Suggested slug | Notes                                                                                                   |
+| ------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------- |
+| **留言板 / Guestbook**          | `guestbook`    | Centred intro card plus the comment area; leave the page body empty or write your own welcome text      |
+| **RSS 订阅 / RSS subscription** | `rss`          | Feed URL with one-click copy, recommended readers, latest posts                                         |
+| **朋友圈 / Moments feed**       | `friends`      | Needs the Links plugin                                                                                  |
+| **心愿便签 / Wishes**           | `wishes`       | Needs the Wishes plugin                                                                                 |
+| **时间轴 / Timeline**           | `timeline`     | Data configured in the theme settings                                                                   |
+| **技能 / Skills**               | `skills`       | Data configured in the theme settings                                                                   |
+| **打赏支持 / Sponsor**          | `sponsor`      | Support methods (QR codes / outbound links) and a supporter list; data configured in the theme settings |
+
+> The slug is up to you (you could serve the RSS page at `/feed`); the values above are
+> just suggestions. The theme's homepage RSS button points at `/rss` by default — update
+> it if you pick a different slug. Once the sponsor page exists, put its URL into
+> Style → Homepage social links → Sponsor page so the entry shows up under the homepage
+> subtitle.
+
+### 3. Paths provided by plugins (only when installed)
+
+| Plugin            | Link value           | Notes                                       |
+| ----------------- | -------------------- | ------------------------------------------- |
+| Moments           | `/moments`           | List; `/moments/{name}` is the detail page  |
+| Photos            | `/photos`            | List; `/photos/{name}` is the detail page   |
+| Links             | `/links`             | Friend links; `?group=` filters by group    |
+| Bilibili bangumi  | `/bangumis`          | Anime list                                  |
+| Schedule calendar | `/schedule-calendar` | Schedule page                               |
+| Equipments        | `/equipments`        | Equipment showcase; `?group=` filters       |
+| Projects          | `/projects`          | List; `/projects/{slug}` is the detail page |
+
+The theme already adapts every template above, so installing the plugin is enough.
+
+### Auth pages (built into Halo)
+
+`/login`, `/signup`, `/logout`, `/password-reset`. You normally do not need these in a
+menu — the theme redirects to them when required.
+
+### Not supported yet
+
+**Author archive** (`/authors/{name}`): the theme ships no `author.html`, so this returns 404. It is inherited from the base theme (upstream does not have it either). Category and
+tag archives both work.
 
 ## Plugin compatibility
 
@@ -184,22 +311,30 @@ plugin simply skips its module instead of erroring.
 
 Deeply integrated plugins:
 
-| Plugin | Purpose |
-| --- | --- |
-| Search | Navbar search panel (Halo search-index API) |
-| Comments | Comment areas on posts, pages, moments and photos |
-| Moments | Moments list and detail pages |
-| Photos | Photo albums (PhotoSwipe lightbox + EXIF) |
-| Links | Friend-link page, application flow, footer card wall, moments feed |
-| Projects | Portfolio list and detail |
-| Equipments | Equipment showcase page |
-| Wishes | Wish wall / message wall |
-| Schedule calendar | Schedule page and sidebar widget |
-| Bilibili bangumi | Anime list page |
-| extra-api | Site-wide word count |
+| Plugin            | Purpose                                                            |
+| ----------------- | ------------------------------------------------------------------ |
+| Search            | Navbar search panel (Halo search-index API)                        |
+| Comments          | Comment areas on posts, pages, moments and photos                  |
+| Moments           | Moments list and detail pages                                      |
+| Photos            | Photo albums (PhotoSwipe lightbox + EXIF)                          |
+| Links             | Friend-link page, application flow, footer card wall, moments feed |
+| Projects          | Portfolio list and detail                                          |
+| Equipments        | Equipment showcase page                                            |
+| Wishes            | Wish wall / message wall                                           |
+| Schedule calendar | Schedule page and sidebar widget                                   |
+| Bilibili bangumi  | Anime list page                                                    |
+| extra-api         | Site-wide word count                                               |
 
 Recommended alongside: **Feed** (RSS), **Sitemap**, **Shiki** (syntax highlighting),
 **lightgallery**.
+
+> **The danmaku does not depend on a comment plugin.** It reads Halo's public comment API
+> only; the `haloCommentEnabled` theme variable (true only when a plugin implements the
+> `CommentWidget` extension point) is irrelevant to it. With a plugin that brings its own
+> UI the comment section may not render while the danmaku keeps working. As long as there
+> are comments in the database, the master switch under Style → Comment danmaku is on and
+> the page matches the configured scope, the danmaku appears — and it collapses by itself
+> when a page has no comments.
 
 > **Shiki plugin tip**: set Style to `simple`, Light theme to `one-light` and Dark theme
 > to `one-dark-pro` to match the code-block frame the theme provides. The `mac` style
@@ -216,12 +351,12 @@ pnpm build     # produces dist/onlynn-<version>.zip
 
 Other commands:
 
-| Command | Purpose |
-| --- | --- |
-| `pnpm dev` | Watch `src/` and rebuild (no zip) |
-| `pnpm build` | Full build plus package an installable zip |
+| Command       | Purpose                                                           |
+| ------------- | ----------------------------------------------------------------- |
+| `pnpm dev`    | Watch `src/` and rebuild (no zip)                                 |
+| `pnpm build`  | Full build plus package an installable zip                        |
 | `pnpm verify` | Identity consistency check (theme / setting / asset-prefix names) |
-| `pnpm check` | Type check |
+| `pnpm check`  | Type check                                                        |
 
 ## Directory structure
 
