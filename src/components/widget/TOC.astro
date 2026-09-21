@@ -157,12 +157,17 @@ const className = Astro.props.class ?? "";
       // 插入（每次 childList 变化都会使布局失效，长文换页后 TOC 初始化时
       // 反复触发整页重排——实测 visit:end 后 300ms 级卡顿来源）
       const fragment = document.createDocumentFragment();
+      /* 顶层序号单独计数：只有 minDepth 那层显示编号，若直接用 heading 的整体下标，
+         中间夹了 h3 之后顶层编号会跳（1、2、3 之后直接到 8） */
+      let topLevelIndex = 0;
       this.headings.forEach((heading, index) => {
         if (!heading.id) {
           heading.id = `heading-${index}`;
         }
 
         const depth = Number(heading.tagName.substring(1));
+        const isTopLevel = depth === minDepth;
+        if (isTopLevel) topLevelIndex += 1;
         const title = heading.textContent?.trim() || "";
         const link = document.createElement("a");
         link.dataset.tocEntry = "true";
@@ -177,9 +182,9 @@ const className = Astro.props.class ?? "";
         }
         link.innerHTML = `
           <div class="transition w-5 h-5 shrink-0 rounded-lg text-xs flex items-center justify-center font-bold ${
-            depth === minDepth ? "bg-(--toc-badge-bg) text-(--btn-content)" : ""
+            isTopLevel ? "bg-(--toc-badge-bg) text-(--btn-content)" : ""
           } ${depth === minDepth + 1 ? "ml-4" : ""} ${depth >= minDepth + 2 ? "ml-8" : ""}">
-            ${depth === minDepth ? String(index + 1) : ""}
+            ${isTopLevel ? String(topLevelIndex) : ""}
             ${depth === minDepth + 1 ? '<div class="transition w-2 h-2 rounded-[0.1875rem] bg-(--toc-badge-bg)"></div>' : ""}
             ${depth >= minDepth + 2 ? '<div class="transition w-1.5 h-1.5 rounded-sm bg-black/5 dark:bg-white/10"></div>' : ""}
           </div>
