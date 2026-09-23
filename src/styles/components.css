@@ -1,253 +1,257 @@
 @reference "./global.css";
 
-@layer components {
-
-/* ── 首页社交链接行 ──
+@layer components {
+  /* ── 首页社交链接行 ──
    压在壁纸上，所以用半透明白 + 毛玻璃：任何底色的图都能保证对比度。
    这里刻意不跟随主题色 —— 壁纸底色不可控，主题色在深色图上未必看得清 */
-.banner-social-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1.1rem;
-  border: 1px solid rgb(255 255 255 / 0.22);
-  border-radius: 9999px;
-  background-color: rgb(255 255 255 / 0.16);
-  color: white;
-  text-shadow: 0 1px 6px rgb(0 0 0 / 0.35);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.2s ease;
-}
+  .banner-social-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.1rem;
+    border: 1px solid rgb(255 255 255 / 0.22);
+    border-radius: 9999px;
+    background-color: rgb(255 255 255 / 0.16);
+    color: white;
+    text-shadow: 0 1px 6px rgb(0 0 0 / 0.35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease;
+  }
 
-.banner-social-pill:hover {
-  background-color: rgb(255 255 255 / 0.26);
-  border-color: rgb(255 255 255 / 0.34);
-  transform: translateY(-1px);
-}
+  .banner-social-pill:hover {
+    background-color: rgb(255 255 255 / 0.26);
+    border-color: rgb(255 255 255 / 0.34);
+    transform: translateY(-1px);
+  }
 
-.banner-social-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border: 1px solid rgb(255 255 255 / 0.22);
-  border-radius: 9999px;
-  background-color: rgb(255 255 255 / 0.16);
-  color: white;
-  text-shadow: 0 1px 6px rgb(0 0 0 / 0.35);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.banner-social-icon:hover {
-  background-color: rgb(255 255 255 / 0.26);
-  border-color: rgb(255 255 255 / 0.34);
-  transform: translateY(-1px);
-}
-
-.banner-social-pill:focus-visible,
-.banner-social-icon:focus-visible {
-  outline: 2px solid white;
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .banner-social-pill,
   .banner-social-icon {
-    transition-duration: 1ms;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid rgb(255 255 255 / 0.22);
+    border-radius: 9999px;
+    background-color: rgb(255 255 255 / 0.16);
+    color: white;
+    text-shadow: 0 1px 6px rgb(0 0 0 / 0.35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease;
   }
-  .banner-social-pill:hover,
+
   .banner-social-icon:hover {
-    transform: none;
+    background-color: rgb(255 255 255 / 0.26);
+    border-color: rgb(255 255 255 / 0.34);
+    transform: translateY(-1px);
   }
-}
-/* ── 沉浸阅读 ──
+
+  .banner-social-pill:focus-visible,
+  .banner-social-icon:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .banner-social-pill,
+    .banner-social-icon {
+      transition-duration: 1ms;
+    }
+    .banner-social-pill:hover,
+    .banner-social-icon:hover {
+      transform: none;
+    }
+  }
+  /* ── 沉浸阅读 ──
    body.reading-focus 由 reading-focus.js 维护。除正文外全部收起，
    正文收成单栏居中并限制行宽（长行在宽屏上很难读）。 */
-body.reading-focus #navbar,
-body.reading-focus .sidebar-column,
-body.reading-focus .aside-column,
-body.reading-focus #toc-container,
-body.reading-focus .floating-controls,
-body.reading-focus #mobile-bottom-bar,
-body.reading-focus .footer {
-  display: none !important;
-}
+  body.reading-focus #navbar,
+  body.reading-focus .sidebar-column,
+  body.reading-focus .aside-column,
+  body.reading-focus #toc-container,
+  body.reading-focus .floating-controls,
+  body.reading-focus #mobile-bottom-bar,
+  body.reading-focus .footer {
+    display: none !important;
+  }
 
-body.reading-focus #main-grid {
-  /* 侧栏虽已隐藏，网格轨道仍会占位，必须显式压成单列 */
-  grid-template-columns: minmax(0, 1fr) !important;
-  max-width: 48rem;
-  margin-inline: auto;
-}
+  body.reading-focus #main-grid {
+    /* 侧栏虽已隐藏，网格轨道仍会占位，必须显式压成单列 */
+    grid-template-columns: minmax(0, 1fr) !important;
+    max-width: 48rem;
+    margin-inline: auto;
+  }
 
-body.reading-focus #main-grid .content-column {
-  grid-column-start: 1 !important;
-}
+  body.reading-focus #main-grid .content-column {
+    grid-column-start: 1 !important;
+  }
 
-/* 出口：沉浸态下导航栏不可见，这枚按钮是唯一的常驻出口 */
-#reading-focus-exit {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 60;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 9999px;
-  color: var(--primary);
-}
+  /* 出口：沉浸态下导航栏不可见，这枚按钮是唯一的常驻出口 */
+  #reading-focus-exit {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 60;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 9999px;
+    color: var(--primary);
+  }
 
-body.reading-focus #reading-focus-exit {
-  display: inline-flex;
-}
+  body.reading-focus #reading-focus-exit {
+    display: inline-flex;
+  }
 
-/* ── 移动端底部导航栏 ──
+  /* ── 移动端底部导航栏 ──
    仅在手机端渲染（lg:hidden），条目配色沿用主题文字色阶与主题色高亮。
    enable 时 html 带 data-mobile-bar="on"，据此给 body 留出高度。 */
-@media (max-width: 1023.98px) {
-  html[data-mobile-bar="on"] body {
-    padding-bottom: 4.5rem;
+  @media (max-width: 1023.98px) {
+    html[data-mobile-bar="on"] body {
+      padding-bottom: 4.5rem;
+    }
   }
-}
 
-#mobile-bottom-bar {
-  /* 顶部圆角由 card-base 承担，底部贴边不需要圆角 */
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-}
+  #mobile-bottom-bar {
+    /* 顶部圆角由 card-base 承担，底部贴边不需要圆角 */
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
 
-.mobile-bar-item {
-  display: flex;
-  flex: 1 1 0;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15rem;
-  min-width: 0;
-  padding: 0.55rem 0.25rem;
-  font-size: 0.6875rem;
-  line-height: 1;
-  transition: color 150ms ease;
-  -webkit-tap-highlight-color: transparent;
-}
+  .mobile-bar-item {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    min-width: 0;
+    padding: 0.55rem 0.25rem;
+    font-size: 0.6875rem;
+    line-height: 1;
+    transition: color 150ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
 
-.mobile-bar-item > span:first-child {
-  font-size: 1.35rem;
-}
+  .mobile-bar-item > span:first-child {
+    font-size: 1.35rem;
+  }
 
-/* 高亮态：text-50 在 @layer utilities，层序晚于本层，需 !important 压过 */
-.mobile-bar-item:active,
-.mobile-bar-item-active {
-  color: var(--primary) !important;
-}
+  /* 高亮态：text-50 在 @layer utilities，层序晚于本层，需 !important 压过 */
+  .mobile-bar-item:active,
+  .mobile-bar-item-active {
+    color: var(--primary) !important;
+  }
 
-/* ── 侧栏位置（左 / 右）──
-   Ethereal 原本把部件栏固定在左列。右置时把三列互换：两栏布局下内容与部件栏对调，
+  /* ── 侧栏位置（左 / 右）──
+   基础样式原本把部件栏固定在左列。右置时把三列互换：两栏布局下内容与部件栏对调，
    三栏布局下部件栏与右栏（目录/部件）对调，内容始终居中。
    工具类在 @layer utilities，层序晚于本文件的 @layer components，故必须 !important。 */
-@media (min-width: 768px) {
-  html[data-sidebar-position="right"] #main-grid {
-    grid-template-columns: 1fr 17.5rem !important;
+  @media (min-width: 768px) {
+    html[data-sidebar-position="right"] #main-grid {
+      grid-template-columns: 1fr 17.5rem !important;
+    }
+    html[data-sidebar-position="right"] #main-grid .content-column {
+      grid-column-start: 1 !important;
+    }
+    html[data-sidebar-position="right"] #main-grid .sidebar-column {
+      grid-column-start: 2 !important;
+    }
   }
-  html[data-sidebar-position="right"] #main-grid .content-column {
-    grid-column-start: 1 !important;
+  @media (min-width: 1280px) {
+    /* 三列布局：右栏挪到左列，部件栏挪到最右列，列宽模板与默认一致 */
+    html[data-sidebar-position="right"] #main-grid.layout-three-column {
+      grid-template-columns: 17.5rem 1fr 17.5rem !important;
+    }
+    html[data-sidebar-position="right"]
+      #main-grid.layout-three-column
+      .aside-column {
+      grid-column-start: 1 !important;
+    }
+    html[data-sidebar-position="right"]
+      #main-grid.layout-three-column
+      .content-column {
+      grid-column-start: 2 !important;
+    }
+    html[data-sidebar-position="right"]
+      #main-grid.layout-three-column
+      .sidebar-column {
+      grid-column-start: 3 !important;
+    }
   }
-  html[data-sidebar-position="right"] #main-grid .sidebar-column {
-    grid-column-start: 2 !important;
-  }
-}
-@media (min-width: 1280px) {
-  /* 三列布局：右栏挪到左列，部件栏挪到最右列，列宽模板与默认一致 */
-  html[data-sidebar-position="right"] #main-grid.layout-three-column {
-    grid-template-columns: 17.5rem 1fr 17.5rem !important;
-  }
-  html[data-sidebar-position="right"] #main-grid.layout-three-column .aside-column {
-    grid-column-start: 1 !important;
-  }
-  html[data-sidebar-position="right"] #main-grid.layout-three-column .content-column {
-    grid-column-start: 2 !important;
-  }
-  html[data-sidebar-position="right"] #main-grid.layout-three-column .sidebar-column {
-    grid-column-start: 3 !important;
-  }
-}
 
-/* ── 卡片边框 ──
+  /* ── 卡片边框 ──
    给卡片与导航栏加一道细描边与轻投影，让卡片在纯色背景上有层次。
    描边用 --line-divider（亮暗两套各自成立），不改卡片底色。 */
-body.card-border-enabled .card-base {
-  border: 1px solid var(--line-divider);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.035);
-}
-body.card-border-enabled #navbar > div:not(.absolute) {
-  border: 1px solid var(--line-divider);
-}
-/* 壁纸透明模式下卡片是磨砂半透明，描边会显脏 */
-body.card-border-enabled.wallpaper-transparent .card-base {
-  border-color: transparent;
-  box-shadow: none;
-}
+  body.card-border-enabled .card-base {
+    border: 1px solid var(--line-divider);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.035);
+  }
+  body.card-border-enabled #navbar > div:not(.absolute) {
+    border: 1px solid var(--line-divider);
+  }
+  /* 壁纸透明模式下卡片是磨砂半透明，描边会显脏 */
+  body.card-border-enabled.wallpaper-transparent .card-base {
+    border-color: transparent;
+    box-shadow: none;
+  }
 
-/* ── 卡片跟随主题色 ──
+  /* ── 卡片跟随主题色 ──
    卡片底色混入主题色相，与页面背景形成同色系层次（默认的纯白/纯黑更中性）。
    只改 .card-base 的背景，不动 --card-bg —— 后者还被描边、遮罩等多处引用 */
-body.card-follow-theme .card-base {
-  background-color: oklch(0.99 0.012 var(--hue));
-}
-:root.dark body.card-follow-theme .card-base {
-  background-color: oklch(0.235 0.02 var(--hue));
-}
+  body.card-follow-theme .card-base {
+    background-color: oklch(0.99 0.012 var(--hue));
+  }
+  :root.dark body.card-follow-theme .card-base {
+    background-color: oklch(0.235 0.02 var(--hue));
+  }
 
-
-/* ── 渐变过渡（壁纸底部 → 页面背景色） ──
+  /* ── 渐变过渡（壁纸底部 → 页面背景色） ──
    在壁纸下沿叠一层由透明渐变到 --page-bg 的遮罩，缓和壁纸与内容区的硬边界。
    高度取 min(30vh, 70%)：30vh 与上游 Firefly 一致；70% 上限避免非首页 35vh
    的矮横幅被渐变整块吃掉。
    显隐由 body.gradient-disabled（访客开关）与 html[data-banner-display] 双重门控。 */
-#banner-gradient {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  /* 只做「壁纸底边 → 页面底色」的接缝过渡，够用即可。
+  #banner-gradient {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* 只做「壁纸底边 → 页面底色」的接缝过渡，够用即可。
      取 30vh 时在 900px 视口下有 270px，会把壁纸下半截和内容上方一大片一起吃掉，
      观感上像整块发虚；这里收到 5rem 上下 */
-  height: min(10vh, 5rem);
-  pointer-events: none;
-  background: linear-gradient(to bottom, transparent, var(--page-bg));
-  /* 压在媒体层之上、标题叠层之下（#banner-overlay 的 z-index 更高） */
-  z-index: 1;
-}
+    height: min(10vh, 5rem);
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--page-bg));
+    /* 压在媒体层之上、标题叠层之下（#banner-overlay 的 z-index 更高） */
+    z-index: 1;
+  }
 
-/* 关闭（访客开关或后台默认）：整体隐藏 */
-body.gradient-disabled #banner-gradient,
+  /* 关闭（访客开关或后台默认）：整体隐藏 */
+  body.gradient-disabled #banner-gradient,
 /* 无壁纸可过渡 */
 html[data-banner-display="disabled"] #banner-gradient,
 /* 全屏透明模式：壁纸即页面背景，内容是磨砂卡片，再叠一层渐变会显脏 */
 html[data-banner-display="transparent"] #banner-gradient {
-  display: none !important;
-}
+    display: none !important;
+  }
 
-
-/* ── 全屏 Hero 布局 ──
+  /* ── 全屏 Hero 布局 ──
    与「经典」全屏的唯一区别在壁纸的定位方式：
      经典 —— 壁纸随文档滚动，滚过去就没了；
      Hero —— 壁纸固定为整屏背景，内容从第二屏开始覆盖其上，
              滚动过程中标题渐隐、壁纸逐步虚化，形成纵深。
-   两个 data 属性必须同时命中（全屏模式 + Hero 布局）且限定首页，
-   因此不影响其它壁纸模式，也不影响非首页的全屏（那里仍是 35vh 横幅）。
+   两个 data 属性必须同时命中（全屏模式 + Hero 布局）即可，**不限首页** ——
+   Hero 是全局模式，文章页与其他页面同样把壁纸固定成整屏背景、随滚动虚化。
+   （非首页的内容起点仍是 35vh，浮在壁纸之上；首页是 100vh 的整屏 + 标题层）
 
    本文件整体位于 @layer components，元素上的 Tailwind 工具类位于 @layer utilities。
    层叠顺序优先于选择器特异性：正常声明下 utilities 胜出，因此这里对 position/top
@@ -255,60 +259,76 @@ html[data-banner-display="transparent"] #banner-gradient {
 
    Hero 的滚动驱动量由 scroll-manager.ts 写入（blur 量化到 2px、透明度量化到 0.05，
    避免每帧触发全屏重栅格化）：--hero-wallpaper-blur、--hero-title-opacity */
-html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
-  body.is-home
-  #banner-wrapper {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0;
-  right: 0;
-  height: 100vh;
-  /* 经典全屏靠「top: -extend + translate: 0 extend」两者相抵把壁纸落在 0 位；
+  html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
+    #banner-wrapper {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0;
+    right: 0;
+    height: 100vh;
+    /* 经典全屏靠「top: -extend + translate: 0 extend」两者相抵把壁纸落在 0 位；
      换成固定定位后 top 已经是 0，那份 translate 没人抵消，会把壁纸整体下推
      一个延伸量（全屏下 65vh）—— 表现为首屏上半部分空白、壁纸只露底部一截。
      这里把位移归零。用 0 0 而非 none：classic ↔ hero 切换时长度与长度才可插值，
      none 会让壁纸瞬移（同 .enable-banner 那条基值注释） */
-  translate: 0 0 !important;
-}
+    translate: 0 0 !important;
+  }
 
-/* 媒体层承接虚化。用 filter 而非 backdrop-filter：作用对象是壁纸自身，内容层不受影响；
+  /* 媒体层承接虚化。用 filter 而非 backdrop-filter：作用对象是壁纸自身，内容层不受影响；
    translate 已用于横幅取景（--bannerOffset），不能挪作他用 */
-html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
-  body.is-home
-  #banner,
-html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
-  body.is-home
-  #banner-mobile {
-  filter: blur(var(--hero-wallpaper-blur, 0px));
-  will-change: filter;
-  /* 虚化由滚动条实时驱动，必须即时跟随。#banner 上有一条 0.7s 的通用过渡
+  html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"] #banner,
+  html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
+    #banner-mobile {
+    filter: blur(var(--hero-wallpaper-blur, 0px));
+    will-change: filter;
+    /* 壁纸取景偏移必须归零：基础规则给 #banner 加了 translate-y(--bannerOffset)
+     （30vh，用于横幅模式下调整壁纸的纵向取景），而 Hero 里幕布已固定为整屏、
+     壁纸要铺满视口，再带着这个偏移就会把壁纸整体下推、上方露出一条页面底色
+     （首页原本由 is-home 工具类的 translate-y-0 兜住，Hero 改全局后非首页没有
+     这层兜底，实测直接打开 /archives 时壁纸被推下 270px） */
+    translate: 0 0 !important;
+    /* 虚化由滚动条实时驱动，必须即时跟随。#banner 上有一条 0.7s 的通用过渡
      （为壁纸模式切换服务），它的属性表里含 filter —— 不排除的话每写一个新
      模糊值都会重新起一段 0.7s 缓动，虚化会明显滞后于滚动、松手后还要再飘一段。
      这里把过渡收敛到 translate：全屏模式下它只承担壁纸取景（--bannerOffset），
      切换模式时仍需过渡。Firefly 是把 filter 挂在没有过渡的 img 上，同理 */
-  transition-property: translate !important;
-  transition-duration: var(--dur-banner, 700ms) !important;
-}
+    transition-property: translate !important;
+    transition-duration: var(--dur-banner, 700ms) !important;
+  }
 
-/* 标题随滚动渐隐 */
-html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
-  body.is-home
-  #banner-overlay {
-  opacity: var(--hero-title-opacity, 1);
-}
+  /* 标题随滚动渐隐 */
+  html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
+    #banner-overlay {
+    opacity: var(--hero-title-opacity, 1);
+  }
 
-/* Hero 下的波浪：改为固定定位。
+  /* Hero 内页（非首页）的背景虚化：常驻按 --hero-inner-blur 虚化。
+   首页保持清晰、随滚动逐步虚化（那是 Hero 的展示性首屏）；内页的内容直接浮在
+   壁纸上（起点 35vh），壁纸不虚化会与卡片抢注意力，浅色壁纸下文字也不易读。
+   这里用字面量 filter 而非 --hero-wallpaper-blur：后者由滚动驱动，内页不需要
+   随滚动变化；两条规则同特异性、本规则在后面，按顺序即可胜出 */
+  html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
+    body:not(.is-home)
+    #banner,
+  html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
+    body:not(.is-home)
+    #banner-mobile {
+    filter: blur(var(--hero-inner-blur, 8px));
+  }
+
+  /* Hero 下波浪整块关掉：Hero 的壁纸是固定整屏背景，波浪没有可贴的「壁纸底边」，
+   留着只会横在内容之上干扰阅读。挂 data 属性而不是 body 类，
+   切换全屏布局时属性即时变化，无需脚本参与 */
+  html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
+    #wave-container {
+    display: none !important;
+  }
+
+  /* Hero 下的波浪：改为固定定位。
    波浪锚定在 banner 底边，而 Hero 的壁纸是固定的 —— 波浪若留在文档流里会随内容
    滚走、与壁纸底边脱开；所以这里让它一并固定，始终贴着壁纸底边。
-   几何沿用全屏首页那套 top/transform（见下方 #wave-container 规则），只换定位方式。
-   再复用标题那条滚动驱动量一起淡出：滚动后内容会盖到第一屏上，
-   而 #main-panel-wrapper 没有底色，不淡出的话波浪会从卡片之间的空隙里透出来 */
-html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
-  body.is-home
-  #wave-container {
-  position: fixed !important;
-  opacity: var(--hero-title-opacity, 1);
-}
+/* （原「Hero 下波浪改固定定位」的规则已删除：Hero 现在整块关掉波浪，
+   见上方 display:none 那条，固定定位那套不会再被命中） */
 
   .card-base {
     @apply overflow-hidden rounded-(--radius-large) bg-(--card-bg) transition;
@@ -660,13 +680,16 @@ html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
      仅全屏模式首页显示（html[data-banner-display=fullscreen] + body.is-home 门控，
      非全屏模式由 html:not([data-banner-display=fullscreen]) 隐藏，原 th:if 移除），
      非首页由 body:not(.is-home) 隐藏，避免换页后产生不可见热区 */
+  /* 大箭头本体（不加底衬：站长试过圆形底衬后觉得不好看，恢复原样）。
+     浅色壁纸下要立得住，靠两点：白色加深到接近不透明、投影分两层
+     （近处一圈窄而深，用于勾出箭头边缘；外面一层宽而淡，用于在浅底上压出对比） */
   #scroll-down-indicator {
     position: absolute;
     z-index: 20;
     bottom: 5rem;
     left: 50%;
     transform: translateX(-50%);
-    color: rgb(255 255 255 / 0.85);
+    color: rgb(255 255 255 / 0.95);
     cursor: pointer;
     transition: color 0.3s ease;
   }
@@ -683,16 +706,17 @@ html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
     font-size: 4.5rem;
     line-height: 1;
     animation: scroll-down-bounce 2s ease-in-out infinite;
-    filter: drop-shadow(0 2px 6px rgb(0 0 0 / 0.3));
+    filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.45))
+      drop-shadow(0 4px 14px rgb(0 0 0 / 0.35));
   }
 
   @media (max-width: 767.98px) {
-    #scroll-down-indicator .scroll-down-icon {
-      font-size: 3.5rem;
-    }
-
     #scroll-down-indicator {
       bottom: 4rem;
+    }
+
+    #scroll-down-indicator .scroll-down-icon {
+      font-size: 3.5rem;
     }
   }
 

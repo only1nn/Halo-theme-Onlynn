@@ -4,10 +4,11 @@
 
 > A card-style blog theme for Halo 2
 >
-> Built on top of [Ethereal](https://github.com/AloneNanNan/halo-theme-ethereal),
+> Base styling from [Fuwari](https://github.com/saicaca/fuwari), ported to Halo,
 > with appearance and interaction customisation modelled on
 > [Firefly](https://github.com/CuteLeaf/Firefly)
 >
+> ![Version](https://img.shields.io/badge/version-1.1.0-blue)
 > ![Halo](https://img.shields.io/badge/Halo-%3E%3D2.25.0-blue)
 > ![Node.js >= 22.12](https://img.shields.io/badge/node.js-%3E%3D22.12-brightgreen)
 > ![pnpm >= 10](https://img.shields.io/badge/pnpm-%3E%3D10-blue)
@@ -70,9 +71,11 @@ never breaks a page
 
 - **Four wallpaper modes**: off / banner / fullscreen / fullscreen-transparent — visitors
   can switch, the admin sets the default
-- **Two fullscreen layouts**: Classic (wallpaper scrolls with the page) and Hero (first
-  screen pinned to the viewport, content scrolls over it, title fades out and wallpaper
-  blurs progressively as you scroll)
+- **Two fullscreen layouts**: Classic (wallpaper scrolls with the page) and Hero (the
+  wallpaper is pinned as a full-screen background, the first screen scrolls up over it and
+  the title fades as you scroll). **Hero applies to every page** — inner pages keep their
+  wallpaper permanently blurred by a configurable amount so the content floating on top
+  stays readable
 - **Sidebar position**: the widget sidebar can sit on the left or the right — in a
   two-column layout it swaps with the content, in a three-column layout it swaps with the
   right column; the content always stays centred
@@ -114,6 +117,8 @@ never breaks a page
   follow your theme colour in both light and dark mode, and the site owner's own
   comments get their own highlight. Hovering pauses, clicking scrolls to the comments.
   Requires a comment plugin (see "Plugin compatibility")
+- **Subtitle typewriter**: multiple lines rotate; the "typewriter backspace" switch decides
+  whether it erases and retypes (looping) or stops once typed
 - **Wave at the banner footer**, gradient transition, wallpaper carousel
 - **Mobile bottom navigation**: a fixed bar whose items (home / archives / categories /
   tags / search / top) are individually configurable; the page reserves space for it and
@@ -331,19 +336,19 @@ plugin simply skips its module instead of erroring.
 
 Deeply integrated plugins:
 
-| Plugin            | Purpose                                                            |
-| ----------------- | ------------------------------------------------------------------ |
-| Search            | Navbar search panel (Halo search-index API)                        |
-| Comments          | Comment areas on posts, pages, moments and photos                  |
-| Moments           | Moments list and detail pages                                      |
-| Photos            | Photo albums (PhotoSwipe lightbox + EXIF)                          |
-| Links             | Friend-link page, application flow, footer card wall, moments feed |
-| Projects          | Portfolio list and detail                                          |
-| Equipments        | Equipment showcase page                                            |
-| Wishes            | Wish wall / message wall                                           |
-| Schedule calendar | Schedule page and sidebar widget                                   |
-| Bilibili bangumi  | Anime list page                                                    |
-| extra-api         | Site-wide word count                                               |
+| Plugin            | Purpose                                                                                            |
+| ----------------- | -------------------------------------------------------------------------------------------------- |
+| Search            | Navbar search panel (Halo search-index API)                                                        |
+| Comments          | Comment areas on posts, pages, moments and photos                                                  |
+| Moments           | Moments list and detail pages                                                                      |
+| Photos            | Photo albums (PhotoSwipe lightbox + EXIF)                                                          |
+| Links             | Friend-link page (own info has a one-click copy), application flow, footer card wall, moments feed |
+| Projects          | Portfolio list and detail                                                                          |
+| Equipments        | Equipment showcase page                                                                            |
+| Wishes            | Wish wall / message wall                                                                           |
+| Schedule calendar | Schedule page and sidebar widget                                                                   |
+| Bilibili bangumi  | Anime list page                                                                                    |
+| extra-api         | Site-wide word count                                                                               |
 
 Recommended alongside: **Feed** (RSS), **Sitemap**, **Shiki** (syntax highlighting),
 **lightgallery**.
@@ -427,14 +432,13 @@ easy to trip. Read `AGENTS.md` before editing templates; the most common traps:
 
 Onlynn stands on the shoulders of several open-source projects:
 
-- [**Fuwari**](https://github.com/saicaca/fuwari) — the original Astro theme that defined
-  the whole design language
-- [**halo-theme-fuwari**](https://github.com/jiewenhuang/halo-theme-fuwari) — Fuwari's Halo
-  port, which proved the "Astro compiles to Thymeleaf" pipeline
-- [**Ethereal**](https://github.com/AloneNanNan/halo-theme-ethereal) — **the direct base of
-  this project**, supplying most of the features and the Halo ecosystem integration
-- [**Firefly**](https://github.com/CuteLeaf/Firefly) — the design reference; several
-  appearance features here (Hero layout, sakura, code-block styling) are modelled on it
+- [**Fuwari**](https://github.com/saicaca/fuwari) — **the styling base of this project**:
+  the card layout, palette and typographic rhythm all come from it. This theme ports it to
+  Halo, keeping the same "Astro compiles to Thymeleaf" pipeline
+- [**Firefly**](https://github.com/CuteLeaf/Firefly) — the design reference: on top of the
+  Fuwari base, the Hero layout, sakura and code-block styling here follow its aesthetics
+- [**Halo**](https://halo.run) — the platform itself; the templating system, settings
+  framework and plugin ecosystem all rest on it
 
 Distributed under the [MIT license](LICENSE). If you reference or reuse components from
 this project, please credit it.

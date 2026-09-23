@@ -32,13 +32,12 @@ let navbarHidden = false;
    每次滚动只写入「变化过的」值：blur 量化到 2px、透明度量化到 0.05。
    全屏 filter 的每次变化都会让整个视口重新栅格化，逐帧写小数会造成
    移动端明显掉帧（与 fullscreen-wallpaper-utils 的处理思路一致）。 */
-const HERO_FADE_RATIO = 0.6;   // 标题在滚动到 60% 视口高度时完全淡出
-const HERO_BLUR_MAX_PX = 12;   // 壁纸最大虚化半径
+const HERO_FADE_RATIO = 0.6; // 标题在滚动到 60% 视口高度时完全淡出
+const HERO_BLUR_MAX_PX = 12; // 壁纸最大虚化半径
 const HERO_BLUR_STEP = 2;
 const HERO_OPACITY_STEP = 0.05;
 let lastHeroBlur = -1;
 let lastHeroTitleOpacity = -1;
-
 
 function getBackToTopBtn() {
   if (!_backToTopBtn?.isConnected)
@@ -67,10 +66,11 @@ function getGrid() {
  */
 function applyHeroScrollEffects(scrollY: number): void {
   const root = document.documentElement;
+  // Hero 是全局模式：只要「全屏 + Hero」两个属性命中就驱动，不再限定首页
+  // （原先限定首页会让非首页的壁纸不固定、不虚化）
   const active =
     root.dataset.bannerDisplay === "fullscreen" &&
-    root.dataset.fullscreenLayout === "hero" &&
-    document.body.classList.contains("is-home");
+    root.dataset.fullscreenLayout === "hero";
 
   if (!active) {
     if (lastHeroBlur !== 0) {
@@ -117,10 +117,9 @@ function scrollFunction() {
   // window.scrollY 在标准滚动容器（html/body）下等价于双 scrollTop 读取
   const scrollY = window.scrollY;
 
-  // Hero 布局的标题渐隐与壁纸虚化：只在「全屏 + Hero + 首页」时生效，
+  // Hero 布局的标题渐隐与壁纸虚化：全屏 + Hero 即生效（全局模式，不限首页），
   // 其余情况把两个变量归零，避免切换布局后残留上一次的虚化/透明度
   applyHeroScrollEffects(scrollY);
-
 
   if (backToTopBtn) {
     backToTopBtn.classList.toggle("hide", scrollY <= bannerHeightPx);

@@ -6,7 +6,7 @@ spec:
   displayName: Onlynn
   author:
     name: nn在发呆
-  description: 一款为 Halo 打造的卡片式博客主题，以 Ethereal 为基础，按 Firefly 的美学补齐外观与交互定制能力。
+  description: 一款为 Halo 打造的卡片式博客主题，基础样式取自 Fuwari，移植到 Halo 后按 Firefly 的美学补齐外观与交互定制能力。
   # 主题列表卡片上的图标：用与默认头像同一张图，避免卡片显示一个与主题无关的占位图标
   logo: /themes/onlynn/assets/images/demo-avatar.png
   homepage: https://github.com/only1nn/halo-theme-Onlynn#readme

@@ -29,8 +29,7 @@ var t =
   if (!window.__onlynnSyncCurrentPostUrlBound) {
     window.__onlynnSyncCurrentPostUrlBound = true;
     document.addEventListener("astro:page-load", function () {
-      window.__onlynnSyncCurrentPostUrl &&
-        window.__onlynnSyncCurrentPostUrl();
+      window.__onlynnSyncCurrentPostUrl && window.__onlynnSyncCurrentPostUrl();
     });
     // 原 swup:contentReplaced 监听删除（v3 事件名从未触发）；
     // 每次进文章页时 SwupScriptsPlugin 重执行本脚本即同步当前文章 URL。
@@ -61,7 +60,7 @@ var t =
     if (el) return el.textContent.trim();
     var t = document.title || "";
     var m = t.split(/\s*[-–—]\s*/);
-    return m.length > 1 ? m[m.length - 1].trim() : "Ethereal";
+    return m.length > 1 ? m[m.length - 1].trim() : "Onlynn";
   }
 
   function getPageDate() {

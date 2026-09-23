@@ -116,7 +116,7 @@ body:
       label: 🔁 复现步骤
       description: 请按顺序列出复现该问题的最小步骤
       placeholder: |
-        1. 启用Ethereal 主题
+        1. 启用 Onlynn 主题
         2. 访问首页
         3. 执行 XXX 操作
         4. 观察到错误现象

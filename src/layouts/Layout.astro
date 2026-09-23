@@ -180,7 +180,7 @@ const themeSettingScript = `<script type="application/json" id="theme-config" th
 <html
   th:lang="${#locale.toLanguageTag}"
   th:data-hue="${theme.config?.style?.displayPanel?.themeColor?.hue}"
-  th:data-hue-fixed="${theme.config?.style?.visitorStyle?.enable == false or theme.config?.style?.visitorStyle?.hue == false}"
+  th:data-hue-fixed="${theme.config?.style?.displayPanel?.visitorStyle?.enable == false or theme.config?.style?.displayPanel?.visitorStyle?.hue == false}"
   th:data-navbar-fixed="${theme.config?.layout?.mobileMenu?.navbarFixed}"
   th:data-theme-anim-style="${theme.config?.layout?.mobileMenu?.enable_change_color_scheme == false ? 'none' : theme.config?.style?.colorScheme?.colorSchemeAnimation?.style}"
   th:data-theme-anim-easing="${theme.config?.style?.colorScheme?.colorSchemeAnimation?.easing}"
@@ -372,7 +372,7 @@ const themeSettingScript = `<script type="application/json" id="theme-config" th
         if (!window.__onlynnBannerLogged) {
           window.__onlynnBannerLogged = true;
           console.log(
-            "%c🌙 Ethereal %cv" + bannerVersion,
+            "%c🌙 Onlynn %cv" + bannerVersion,
             "color:#8b5cf6;font-weight:bold;",
             "color:#888;",
           );
@@ -463,7 +463,7 @@ const themeSettingScript = `<script type="application/json" id="theme-config" th
   <body
     class:list={["relative min-h-screen transition", { "is-home": isHomePage }]}
     th:classappend="${(bannerHasMedia ? ' enable-banner' : '') + (theme.config?.style?.styleSwitches?.navbar_blur ? ' navbar-blur-enabled' : '') + (theme.config?.style?.styleSwitches?.card_hover_lift != false ? ' card-hover-lift-enabled' : '') + (theme.config?.style?.styleSwitches?.card_border == true ? ' card-border-enabled' : '') + (theme.config?.style?.styleSwitches?.card_follow_theme == true ? ' card-follow-theme' : '') + (theme.config?.style?.styleSwitches?.banner_gradient == false ? ' gradient-disabled' : '')}"
-    th:style="|--bannerOffset: ${theme.config?.style?.bannerStyle?.position == 'top' ? '30vh' : (theme.config?.style?.bannerStyle?.position == 'bottom' ? '0' : '15vh')}; --transparent-wallpaper-opacity: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.wallpaperOpacity ?: 0.8}; --transparent-wallpaper-blur: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.wallpaperBlur ?: 10}px; --transparent-card-alpha: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.cardOpacity ?: 0.6};|"
+    th:style="|--bannerOffset: ${theme.config?.style?.bannerStyle?.position == 'top' ? '30vh' : (theme.config?.style?.bannerStyle?.position == 'bottom' ? '0' : '15vh')}; --transparent-wallpaper-opacity: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.wallpaperOpacity ?: 0.8}; --transparent-wallpaper-blur: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.wallpaperBlur ?: 10}px; --transparent-card-alpha: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.cardOpacity ?: 0.6}; --hero-inner-blur: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.heroInnerBlur ?: 8}px;|"
     data-overlayscrollbars-initialize
   >
     <ConfigCarrier />

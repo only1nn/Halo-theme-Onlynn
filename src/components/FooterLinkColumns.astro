@@ -1,0 +1,112 @@
+---
+/*
+  页脚链接栏（多栏链接）。
+
+  数据取自 **Halo 菜单**，而不是在主题设置里再建一套链接数组：
+  菜单编辑器本身就支持嵌套、拖拽排序与图标，是最适合维护「分栏 + 多条链接」的地方，
+  主题设置里只留一个菜单选择器，避免两套重复的编辑体验。
+
+  列的规则：
+    · 一级菜单项 → 栏目标题（自身不作为链接渲染）
+    · 二级菜单项 → 该栏的链接
+    · 一级项没有子项 → 把自身作为该栏唯一链接，避免出现空栏
+
+  版式：页脚整体是居中节奏（友链墙的标题居中、版权居中），所以这里也**居中成组**——
+  用 w-fit + mx-auto 让整组按内容宽度居中，只有少数几栏时不会贴着左边缘留一大片空白。
+  横向留白由 px-4 与栏间距提供，链接也刻意不用主题的 .link 类：那个类带 -m-1 负外边距，
+  会把文字顶到容器外，页脚里看着就是「贴着边框」。
+
+  仅首页显示沿用页脚友链那套：挂 hbf-home-only 类，由 body.is-home 单一控制
+  （body.is-home 服务端输出首帧初值，运行期由 Swup 每次换页纠正）。
+
+  列数用「列数 → 类名」的映射表转成 Tailwind 字面量：类名必须原样出现在源码里，
+  构建期的内容扫描才能生成对应规则，不能写成 `grid-cols-${n}` 动态拼接。
+
+  ⚠ 取值那层必须加括号：`columns` 本身是 `配置 ?: '4'`，若直接拼成
+  `${columns} == '2' ? A : B`，就变成 `X ?: '4' == '2' ? A : B` —— SpEL 的 Elvis
+  会把后面整段三元吞进去，结果直接返回配置原值（实测渲染成 class="... 4"）。
+*/
+const cfg = "theme.config?.footer?.linkColumns";
+const columns = `${cfg}?.columns ?: '4'`;
+const gridClass =
+  `\${(${columns}) == '2' ? 'grid-cols-1 sm:grid-cols-2' : ` +
+  `((${columns}) == '3' ? 'grid-cols-2 sm:grid-cols-3' : ` +
+  `((${columns}) == '5' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5' : ` +
+  `((${columns}) == '6' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6' : 'grid-cols-2 sm:grid-cols-4')))}`;
+const menuExpr = `${cfg}?.menu`;
+const visible = `${cfg}?.enable == true`;
+---
+
+<nav
+  th:if={`\${${visible}}`}
+  th:classappend={`\${${cfg}?.homeOnly == true ? ' hbf-home-only' : ''}`}
+  th:with={`menu = \${not #strings.isEmpty(${menuExpr}) ? menuFinder.getByName(${menuExpr}) : menuFinder.getPrimary()}`}
+  class="hlc-root"
+>
+  <div th:if="${menu != null and not #lists.isEmpty(menu.menuItems)}">
+    <!-- 标题行：与页脚「友情链接」同款（淡色圆角方块图标 + 粗体标题），居中 -->
+    <div
+      th:if={`\${not #strings.isEmpty(${cfg}?.title)}`}
+      class="mb-6 flex items-center justify-center gap-2"
+    >
+      <span
+        class="icon-[material-symbols--explore-outline-rounded] flex h-6 w-6 flex-none items-center justify-center rounded-md bg-(--btn-regular-bg) text-base text-(--btn-content)"
+        aria-hidden="true"></span>
+      <span
+        class="text-[0.95rem] font-bold tracking-wide text-90"
+        th:text={`\${${cfg}?.title}`}>站点导航</span
+      >
+    </div>
+
+    <!-- 链接栏：整组按内容宽度居中，栏内文字左对齐（经典页脚做法） -->
+    <div
+      class="mx-auto grid w-fit max-w-full gap-x-10 gap-y-8 px-4 text-left"
+      th:classappend={gridClass}
+    >
+      <div th:each="col : ${menu.menuItems}">
+        <h3
+          class="mb-3 text-sm font-bold text-90"
+          th:text="${col.status.displayName}"
+        >
+          导航
+        </h3>
+        <ul class="flex flex-col gap-2.5">
+          <!-- 没有子项：把一级项自身作为唯一链接，避免留一个空栏 -->
+          <li th:if="${col.children == null or #lists.isEmpty(col.children)}">
+            <a
+              th:href="@{${col.status.href}}"
+              th:target="${col.spec.target?.value}"
+              class="inline-block text-sm text-50 transition-colors duration-200 hover:text-(--primary)"
+              th:text="${col.status.displayName}">首页</a
+            >
+          </li>
+          <li th:each="link : ${col.children}">
+            <a
+              th:href="@{${link.status.href}}"
+              th:target="${link.spec.target?.value}"
+              class="inline-block text-sm text-50 transition-colors duration-200 hover:text-(--primary)"
+              th:text="${link.status.displayName}">链接</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<style is:global>
+  /* ===== 页脚链接栏（.hlc- 前缀，与友链墙的居中节奏对齐） ===== */
+  .hlc-root {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    /* 下方与版权信息之间留出呼吸位；上方间距由页脚分隔线的 margin-bottom 提供 */
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  /* ---- 「仅在首页显示」：与页脚友链同一套，由 body.is-home 单一控制 ---- */
+  body:not(.is-home) .hlc-root.hbf-home-only {
+    display: none;
+  }
+</style>

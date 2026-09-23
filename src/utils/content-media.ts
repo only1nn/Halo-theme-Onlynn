@@ -15,7 +15,7 @@ async function initContentLightbox() {
       await import("../utils/content-photoswipe");
     lightbox = initContentPhotoSwipe();
   } catch (error) {
-    console.error("[Ethereal] Failed to initialize content images", error);
+    console.error("[Onlynn] Failed to initialize content images", error);
   } finally {
     isLoadingContentPhotoSwipe = false;
   }
@@ -31,7 +31,7 @@ async function initPhotosGallery() {
       await import("../utils/photos-gallery-lightbox");
     photosGalleryLightbox = initPhotosGalleryLightbox();
   } catch (error) {
-    console.error("[Ethereal] Failed to initialize photos gallery", error);
+    console.error("[Onlynn] Failed to initialize photos gallery", error);
   } finally {
     isLoadingPhotosGalleryLightbox = false;
   }

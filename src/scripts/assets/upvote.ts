@@ -6,7 +6,7 @@
       if (btn.dataset.upvoteBound) return;
       btn.dataset.upvoteBound = "true";
       var name = btn.getAttribute("data-moment");
-      var key = "ethereal-upvote-moment-" + name;
+      var key = "onlynn-upvote-moment-" + name;
       if (localStorage.getItem(key) === "1") {
         btn.classList.add("text-(--primary)");
         btn.style.pointerEvents = "none";

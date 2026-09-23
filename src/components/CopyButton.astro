@@ -1,31 +1,56 @@
 ---
-const { copyText = "" } = Astro.props;
+// 复制按钮：把 copyText 写进 data-copy-text，点击由 links.bundle.js 的 .copy-btn 委托处理。
+//
+// copyText 两种形态：
+//   · 字面量（渲染成 data-copy-text="..."，多行可直接写换行）
+//   · Thymeleaf 表达式（形如 "${...}"，渲染成 th:attr="data-copy-text=${...}"）
+//
+// labelExpr / extraClass 供「一键复制全部」这类需要更宽更醒目样式的调用方使用；
+// ⚠ 图标固定用 content-copy，因为复制成功后的图标替换是按这个名字查的（links.bundle.js），
+//   换图标会让成功反馈失效。
+interface Props {
+  copyText?: string;
+  /** 按钮文案的 Thymeleaf 表达式，如 "#{page.links.copyAll}"；缺省用 common.copy */
+  labelExpr?: string;
+  /** 追加到按钮上的类，用于加宽 / 加粗等 */
+  extraClass?: string;
+}
+
+const {
+  copyText = "",
+  labelExpr = "#{common.copy}",
+  extraClass = "",
+} = Astro.props;
 const isTemplate = copyText.startsWith("${") && copyText.endsWith("}");
 const expr = isTemplate ? copyText.slice(2, -1) : copyText;
+const btnClass = [
+  "copy-btn inline-flex items-center gap-1.5 rounded-lg bg-(--primary)/8 px-2 py-1 text-xs text-(--btn-content) transition hover:bg-(--primary)/15 hover:text-(--primary) active:scale-95",
+  extraClass,
+];
 ---
 
 {
   isTemplate ? (
     <button
       type="button"
-      class="copy-btn inline-flex items-center gap-1.5 rounded-lg bg-(--primary)/8 px-2 py-1 text-xs text-(--btn-content) transition hover:bg-(--primary)/15 hover:text-(--primary) active:scale-95"
+      class:list={btnClass}
       th:attr={`data-copy-text=\${${expr}}`}
       title="Copy"
       th:title="#{common.copy}"
     >
       <span class="icon-[material-symbols--content-copy-outline-rounded] text-sm" />
-      <span th:text="#{common.copy}">Copy</span>
+      <span th:text={labelExpr}>Copy</span>
     </button>
   ) : (
     <button
       type="button"
-      class="copy-btn inline-flex items-center gap-1.5 rounded-lg bg-(--primary)/8 px-2 py-1 text-xs text-(--btn-content) transition hover:bg-(--primary)/15 hover:text-(--primary) active:scale-95"
+      class:list={btnClass}
       data-copy-text={copyText}
       title="Copy"
       th:title="#{common.copy}"
     >
       <span class="icon-[material-symbols--content-copy-outline-rounded] text-sm" />
-      <span th:text="#{common.copy}">Copy</span>
+      <span th:text={labelExpr}>Copy</span>
     </button>
   )
 }

@@ -7,7 +7,6 @@ import MainGridLayout from "../layouts/MainGridLayout.astro";
 const basePath = import.meta.env.BASE_URL.replace(/\/+$/, "");
 // ASSET_VERSION 由 astro.config.mjs 构建期从 theme.yaml 注入（vite.define）
 declare const ASSET_VERSION: string;
-
 ---
 
 <MainGridLayout
@@ -93,7 +92,7 @@ declare const ASSET_VERSION: string;
                   class="truncate text-base font-bold text-(--primary)"
                   th:text="${moment.owner != null ? moment.owner.displayName : #messages.msg('page.moments.title')}"
                 >
-                  Ethereal
+                  Onlynn
                 </div>
                 <time
                   class="mt-0.5 block text-sm text-50"
@@ -197,12 +196,13 @@ declare const ASSET_VERSION: string;
 
   <!-- 点赞脚本必须写在 Layout 内（= Swup 容器内）：换页进来时由 SwupScriptsPlugin
        重执行、重新绑定按钮（脚本靠 data-upvote-bound 幂等）。写在   <!-- 代码块增强（语言徽章 / 行号 / 长块折叠 / 复制），纯增量、不设门控 -->
-  <script src={`${basePath}/assets/code-block.js?v=${ASSET_VERSION}`} defer is:inline></script>
-
-</MainGridLayout>
-       之后会被产出到 </html> 外面、不在容器内，换页到本页时不会执行 → 点赞点不动 -->
   <script
-    src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/upvote.js?v=${ASSET_VERSION}`}
+    src={`${basePath}/assets/code-block.js?v=${ASSET_VERSION}`}
     defer
     is:inline></script>
 </MainGridLayout>
+之后会被产出到 外面、不在容器内，换页到本页时不会执行 → 点赞点不动 -->
+<script
+  src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/upvote.js?v=${ASSET_VERSION}`}
+  defer
+  is:inline></script>

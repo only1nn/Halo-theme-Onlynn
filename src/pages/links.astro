@@ -3,6 +3,7 @@ import MainGridLayout from "../layouts/MainGridLayout.astro";
 import CopyButton from "../components/CopyButton.astro";
 import FilterTabs from "../components/control/FilterTabs.astro";
 import PageHeader from "../components/control/PageHeader.astro";
+const owner = "theme.config?.links?.ownerInfo";
 ---
 
 <MainGridLayout
@@ -289,6 +290,20 @@ import PageHeader from "../components/control/PageHeader.astro";
               copyText="${theme.config?.links?.ownerInfo.owner_rss}"
             />
           </div>
+        </div>
+
+        <!-- 一键复制全部：把五个字段拼成「标签：值」的多行文本。
+             标签与格式放在 i18n 的 page.links.copyAllTextA（三个字段）与 copyAllTextB
+             （两个字段）里 —— 因为 #messages.msg 最多只接受 3 个参数
+             （msgWithParams 要 Object[]，SpEL 造不出来），所以拆成两段拼接。
+             段间的换行写在 B 段模板开头的 \n 里，**不要用 SpEL 的 '\n' 拼**：
+             SpEL 不解析 \n 转义，会原样输出一个反斜杠加 n（已实测） -->
+        <div class="mt-3">
+          <CopyButton
+            copyText={`\${#messages.msg('page.links.copyAllTextA', ${owner}?.owner_name, ${owner}?.owner_description, ${owner}?.owner_url) + #messages.msg('page.links.copyAllTextB', ${owner}?.owner_avatar, ${owner}?.owner_rss)}`}
+            labelExpr="#{page.links.copyAll}"
+            extraClass="w-full justify-center py-2 text-[13px] font-medium"
+          />
         </div>
       </div>
 

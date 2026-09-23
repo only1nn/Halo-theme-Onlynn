@@ -165,4 +165,4 @@ fix: 修复文章分享海报保存无反应与公告小组件 PC 端无法关�
 
 - **报 Bug / 提建议**：请使用 [Issue 模板](https://github.com/only1nn/halo-theme-Onlynn/issues/new/choose)，选择合适的模板填写。
 - **使用疑问**：可在 [Discussions](https://github.com/only1nn/halo-theme-Onlynn/discussions) 讨论。
-- **许可证**：本项目基于 [MIT License](./LICENSE) 开源。它是 [Ethereal](https://github.com/AloneNanNan/halo-theme-ethereal) 的衍生项目，而 Ethereal 又衍生自 [halo-theme-fuwari](https://github.com/jiewenhuang/halo-theme-fuwari)、后者移植自 [Fuwari](https://github.com/saicaca/fuwari)。贡献即代表同意代码以 MIT 协议开源。
+- **许可证**：本项目基于 [MIT License](./LICENSE) 开源。它是 [Fuwari](https://github.com/saicaca/fuwari) 的衍生项目：样式基座来自 Fuwari，移植到 Halo 平台，并按 [Firefly](https://github.com/CuteLeaf/Firefly) 的美学补齐外观与交互定制能力。各上游项目的版权声明见 [LICENSE](./LICENSE)。贡献即代表同意代码以 MIT 协议开源。

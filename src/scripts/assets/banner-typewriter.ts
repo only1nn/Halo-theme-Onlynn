@@ -1,7 +1,28 @@
 // @ts-nocheck —— legacy 手写脚本迁入源码目录（保持 ES5 原样，不做类型改造）
 // 打字机效果
 (function () {
-  var TypewriterEffect = function (el, lines) {
+  /**
+   * 后台「副标题动效 → 打字机回退效果」开关（读 Layout 注入的 #theme-config）。
+   * 开启：打完逐字回退再重打，一直循环；关闭：单行副标题打完即停。
+   * 读不到配置时按开启处理，与设置项的默认值一致。
+   */
+  function backspaceEnabled() {
+    var el = document.getElementById("theme-config");
+    if (!el || !el.textContent) return true;
+    try {
+      var cfg = JSON.parse(el.textContent);
+      var v =
+        cfg &&
+        cfg.style &&
+        cfg.style.bannerText &&
+        cfg.style.bannerText.typewriterBackspace;
+      return v !== false;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  var TypewriterEffect = function (el, lines, backspace) {
     this.el = el;
     this.lines = lines;
     this.index = 0;
@@ -12,6 +33,9 @@
     this.deleteSpeed = 40;
     this.pauseAfterType = 2000;
     this.pauseAfterDelete = 500;
+    // 是否循环：副标题写多行时本来就要逐条轮流展示，必须循环；
+    // 单行则听后台开关（关闭 = 打完即停，即改造前的行为）
+    this.loop = lines.length > 1 || backspace;
 
     var self = this;
     self.setText("");
@@ -31,7 +55,7 @@
       self.charIdx++;
       self.setText(text.substring(0, self.charIdx));
       if (self.charIdx >= text.length) {
-        if (self.lines.length > 1) {
+        if (self.loop) {
           self.deleting = true;
           self.timeoutId = setTimeout(function () {
             self.type();
@@ -110,7 +134,7 @@
       .filter(Boolean);
     if (lines.length === 0) return;
 
-    el.__twInstance = new TypewriterEffect(el, lines);
+    el.__twInstance = new TypewriterEffect(el, lines, backspaceEnabled());
   }
 
   function runInitTW() {

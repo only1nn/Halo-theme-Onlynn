@@ -25,7 +25,7 @@ import { getThemeConfig } from "./_theme-config";
   const likeBtn = btn;
   var postName = likeBtn.getAttribute("data-post");
   var svCount = parseInt(likeBtn.getAttribute("data-count") || "0", 10);
-  var key = "ethereal-like-" + postName;
+  var key = "onlynn-like-" + postName;
   var liked = localStorage.getItem(key) === "1";
   var countEl = document.getElementById("post-like-count");
   var count = Math.max(

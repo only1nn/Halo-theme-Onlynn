@@ -464,6 +464,17 @@ spec:
                     - label: Hero 模式
                       value: hero
                 - $formkit: number
+                  name: heroInnerBlur
+                  id: banner_heroInnerBlur
+                  key: banner_heroInnerBlur
+                  if: "$get(banner_displayMode).value === 'fullscreen'"
+                  label: Hero 内页背景虚化
+                  min: 0
+                  max: 24
+                  step: 1
+                  value: 8
+                  help: "仅全屏 + Hero 生效。首页保持清晰（滚动时逐步虚化），其余页面的壁纸按此值常驻虚化，让浮在壁纸上的内容更清楚；填 0 表示不虚化"
+                - $formkit: number
                   name: wallpaperOpacity
                   id: banner_transparent_wallpaperOpacity
                   key: banner_transparent_wallpaperOpacity
@@ -818,6 +829,7 @@ spec:
               help: "副标题字体大小，支持 CSS 单位（如 1.5rem、20px）"
             - $formkit: select
               name: subtitleEffect
+              id: bannerText_subtitleEffect
               if: "$get(bannerText_enable).value"
               label: 副标题动效
               value: "typewriter"
@@ -826,6 +838,13 @@ spec:
                   label: 打字机效果
                 - value: drop
                   label: 文字下坠
+            - $formkit: switch
+              name: typewriterBackspace
+              id: bannerText_backspace
+              if: "$get(bannerText_enable).value && $get(bannerText_subtitleEffect).value === 'typewriter'"
+              label: 打字机回退效果
+              value: true
+              help: "打字完成后逐字回退再重新打字，形成循环动画；关闭则打完即停。副标题写了多行时始终逐条循环，此开关只决定「最后一轮打完后要不要接着打」"
         - $formkit: group
           name: colorScheme
           label: 配色方案

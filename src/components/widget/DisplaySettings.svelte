@@ -635,7 +635,10 @@
             <span class="toggle" class:toggle-on={bannerTitle}><span class="toggle-knob"></span></span>
           </button>
         {/if}
-        {#if defaultWave}
+        <!-- 波浪只在「横幅」与「全屏 + 经典」下有意义：Hero 的壁纸是固定整屏背景，
+             没有可贴的壁纸底边，CSS 已整块关掉波浪（html[data-fullscreen-layout=hero]
+             #wave-container），这里同步收起开关，避免留一个按了没反应的控件 -->
+        {#if defaultWave && (wallpaperMode === "banner" || fullscreenLayout === "classic")}
           <button type="button" class="toggle-row" class:toggle-on={wave} role="switch" aria-checked={wave} on:click={toggleWave}>
             <span class="icon-[material-symbols--water-lux-rounded] toggle-icon"></span>
             <span class="toggle-label">{t("display.wave", "波浪")}</span>

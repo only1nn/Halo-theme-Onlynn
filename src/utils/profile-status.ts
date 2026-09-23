@@ -23,8 +23,7 @@
 import { getThemeConfig, setThemeConfig } from "./theme-config";
 
 // 客户端 i18n：复用 Layout.astro 注入的全局助手（缺失时退化为回退文案）
-const t =
-  window.__onlynnI18n ?? ((_key: string, fallback: string) => fallback);
+const t = window.__onlynnI18n ?? ((_key: string, fallback: string) => fallback);
 
 export interface StatusOption {
   key: string;
@@ -140,7 +139,7 @@ function clearStatusTexts(settings: Record<string, unknown>) {
 
 function getThemeName(): string {
   const el = document.getElementById("config-carrier");
-  return el?.getAttribute("data-theme-name") || "Ethereal";
+  return el?.getAttribute("data-theme-name") || "onlynn";
 }
 
 function getJsonConfigUrl(): string {

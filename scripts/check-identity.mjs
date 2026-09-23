@@ -34,7 +34,8 @@ async function walk(dir, out = []) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (["node_modules", ".git", "templates", "dist"].includes(entry.name)) continue;
+      if (["node_modules", ".git", "templates", "dist"].includes(entry.name))
+        continue;
       await walk(full, out);
     } else {
       out.push(full);
@@ -52,9 +53,13 @@ if (!themeYaml) {
   process.exit(1);
 }
 
-const themeName = /^metadata:\s*$[\s\S]*?^\s{2}name:\s*(\S+)/m.exec(themeYaml)?.[1];
+const themeName = /^metadata:\s*$[\s\S]*?^\s{2}name:\s*(\S+)/m.exec(
+  themeYaml,
+)?.[1];
 const settingName = /settingName:\s*"?([^"\n]+)"?/.exec(themeYaml)?.[1]?.trim();
-const configMapName = /configMapName:\s*"?([^"\n]+)"?/.exec(themeYaml)?.[1]?.trim();
+const configMapName = /configMapName:\s*"?([^"\n]+)"?/
+  .exec(themeYaml)?.[1]
+  ?.trim();
 
 if (!themeName) fail("theme.yaml 缺少 metadata.name");
 if (!settingName) fail("theme.yaml 缺少 spec.settingName");
@@ -65,7 +70,9 @@ const settingsYaml = await readIfExists(path.join(root, "settings.yaml"));
 if (!settingsYaml) {
   fail("缺少 settings.yaml");
 } else {
-  const declared = /^metadata:\s*$[\s\S]*?^\s{2}name:\s*(\S+)/m.exec(settingsYaml)?.[1];
+  const declared = /^metadata:\s*$[\s\S]*?^\s{2}name:\s*(\S+)/m.exec(
+    settingsYaml,
+  )?.[1];
   if (declared !== settingName) {
     fail(
       `settings.yaml 的 Setting 名 (${declared}) 与 theme.yaml 的 settingName (${settingName}) 不一致 —— ` +
@@ -76,11 +83,15 @@ if (!settingsYaml) {
 
 // ── 3. astro.config.mjs 的 base 必须指向本主题 ────────────────────
 const astroConfig = await readIfExists(path.join(root, "astro.config.mjs"));
-const base = astroConfig ? /base:\s*[`"']([^`"']+)[`"']/.exec(astroConfig)?.[1] : null;
+const base = astroConfig
+  ? /base:\s*[`"']([^`"']+)[`"']/.exec(astroConfig)?.[1]
+  : null;
 if (!base) {
   fail("astro.config.mjs 里找不到 base");
 } else if (base !== `/themes/${themeName}`) {
-  fail(`astro.config.mjs 的 base (${base}) 与主题名 (${themeName}) 不匹配，应为 /themes/${themeName}`);
+  fail(
+    `astro.config.mjs 的 base (${base}) 与主题名 (${themeName}) 不匹配，应为 /themes/${themeName}`,
+  );
 }
 
 // ── 4. 全仓库不得残留其它主题的资源前缀 ──────────────────────────
@@ -93,17 +104,26 @@ for (const file of files) {
     if (prefix === themeName) continue;
     // Halo 自身或插件资源的引用不算问题
     if (["halo", "plugins"].includes(prefix)) continue;
-    foreignPrefixes.set(prefix, [...(foreignPrefixes.get(prefix) ?? []), path.relative(root, file)]);
+    foreignPrefixes.set(prefix, [
+      ...(foreignPrefixes.get(prefix) ?? []),
+      path.relative(root, file),
+    ]);
   }
 }
 for (const [prefix, where] of foreignPrefixes) {
-  fail(`发现指向其它主题的资源前缀 /themes/${prefix}/ ，出现在：${[...new Set(where)].join(", ")}`);
+  fail(
+    `发现指向其它主题的资源前缀 /themes/${prefix}/ ，出现在：${[...new Set(where)].join(", ")}`,
+  );
 }
 
 // ── 5. annotation-setting.yaml 的扩展名应带本主题前缀 ────────────
-const annotation = await readIfExists(path.join(root, "annotation-setting.yaml"));
+const annotation = await readIfExists(
+  path.join(root, "annotation-setting.yaml"),
+);
 if (annotation) {
-  const name = /^metadata:\s*$[\s\S]*?^\s{2}name:\s*(\S+)/m.exec(annotation)?.[1];
+  const name = /^metadata:\s*$[\s\S]*?^\s{2}name:\s*(\S+)/m.exec(
+    annotation,
+  )?.[1];
   if (name && !name.startsWith(themeName)) {
     notes.push(
       `annotation-setting.yaml 的扩展名 (${name}) 未使用主题前缀 —— 不是错误，但如果它是从上游继承的，建议改成 ${themeName}- 前缀`,
@@ -111,38 +131,59 @@ if (annotation) {
   }
 }
 
-// ── 6. 上游身份不应出现在对外位置 ─────────────────────────────────
-const UPSTREAM = ["AloneNanNan", "halo-theme-ethereal"];
+// ── 6. 已移除的旧标识不应再出现在源码与文案里 ─────────────────────
+// 已从主题中移除的旧标识：改版后不应再出现在任何文案里，
+// 这里做泄露检测（LICENSE 里的中文署名「楠南NanNan」不在其中，那是 MIT 要求保留的版权声明）
+const REMOVED = ["AloneNanNan", "halo-theme-ethereal", "seisou", "nan-xaing"];
 for (const file of files) {
   const rel = path.relative(root, file).split(path.sep).join("/");
-  // README 与 LICENSE 需要保留归属声明，不检查
+  // 文档里可能正当提及上游项目，不检查；本脚本自身持有标识清单，也跳过
   if (/^(README|LICENSE|CHANGELOG|CONTRIBUTING)/.test(rel)) continue;
+  if (rel === "scripts/check-identity.mjs") continue;
   const content = await readIfExists(file);
   if (!content) continue;
-  for (const token of UPSTREAM) {
+  for (const token of REMOVED) {
     if (content.includes(token)) {
-      notes.push(`${rel} 仍含上游标识「${token}」—— 确认这是有意保留的归属声明`);
+      notes.push(
+        `${rel} 仍含已移除的旧标识「${token}」—— 改版后不应再出现，请清理`,
+      );
     }
   }
 }
 
 // ── 7. 构建产物必须引用样式表（防止误删样式导入）──────────────────
 const outIndex = path.join(root, "templates", "index.html");
-if (await stat(outIndex).then(() => true, () => false)) {
+if (
+  await stat(outIndex).then(
+    () => true,
+    () => false,
+  )
+) {
   const html = await readFile(outIndex, "utf8");
   const href = /<link rel="stylesheet" href="([^"]+)"/.exec(html)?.[1];
   if (!href) {
     fail("templates/index.html 没有引用任何样式表 —— 页面会渲染成无样式文本");
   } else {
-    const assetPath = path.join(root, "templates", href.replace(/^\/themes\/[^/]+\//, ""));
-    if (!(await stat(assetPath).then(() => true, () => false))) {
+    const assetPath = path.join(
+      root,
+      "templates",
+      href.replace(/^\/themes\/[^/]+\//, ""),
+    );
+    if (
+      !(await stat(assetPath).then(
+        () => true,
+        () => false,
+      ))
+    ) {
       fail(`templates/index.html 引用的样式表不存在：${href}`);
     }
   }
 }
 
 // ── 输出 ──────────────────────────────────────────────────────────
-console.log(`主题身份：${themeName}  设置：${settingName}  配置：${configMapName}`);
+console.log(
+  `主题身份：${themeName}  设置：${settingName}  配置：${configMapName}`,
+);
 
 for (const note of notes) console.log(`  · ${note}`);
 

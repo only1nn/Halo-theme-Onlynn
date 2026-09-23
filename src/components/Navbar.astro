@@ -171,10 +171,10 @@ const className = Astro.props.class;
         <LanguageSwitch client:only="svelte" />
       </span>
       <!-- 面板切换不再使用内联 onclick（CSP 友好），由 public/assets/navbar.js 的 document 级事件委托统一处理。
-           入口可见性：总开关开启且任一分区可用（主题色相/文章布局/卡片样式/壁纸模式/全屏布局/壁纸设置/透明设置）；总开关关闭则入口隐藏
+           入口可见性：总开关开启且任一分区可用（主题色相/文章布局/卡片样式/壁纸模式/全屏布局/壁纸设置/透明设置/渐变/轮播/卡片边框/跟随主题/樱花/弹幕/侧栏位置）；总开关关闭则入口隐藏
            新增访客开关时必须同步这里，否则「只有新开关可用」时入口不会出现 -->
       <button
-        th:if="${theme.config?.style?.visitorStyle?.enable != false and ((theme.config?.style?.visitorStyle?.hue != false) or (theme.config?.style?.visitorStyle?.postListLayout != false) or (theme.config?.style?.visitorStyle?.cardStyle != false) or (theme.config?.style?.visitorStyle?.wallpaperMode != false) or (theme.config?.style?.visitorStyle?.wallpaperSettings != false) or (theme.config?.style?.visitorStyle?.transparent != false) or (theme.config?.style?.visitorStyle?.fullscreenLayout != false) or (theme.config?.style?.visitorStyle?.gradient != false) or (theme.config?.style?.visitorStyle?.carousel != false) or (theme.config?.style?.visitorStyle?.cardBorder != false) or (theme.config?.style?.visitorStyle?.cardFollowTheme != false))}"
+        th:if="${theme.config?.style?.displayPanel?.visitorStyle?.enable != false and ((theme.config?.style?.displayPanel?.visitorStyle?.hue != false) or (theme.config?.style?.displayPanel?.visitorStyle?.postListLayout != false) or (theme.config?.style?.displayPanel?.visitorStyle?.cardStyle != false) or (theme.config?.style?.displayPanel?.visitorStyle?.wallpaperMode != false) or (theme.config?.style?.displayPanel?.visitorStyle?.wallpaperSettings != false) or (theme.config?.style?.displayPanel?.visitorStyle?.transparent != false) or (theme.config?.style?.displayPanel?.visitorStyle?.fullscreenLayout != false) or (theme.config?.style?.displayPanel?.visitorStyle?.gradient != false) or (theme.config?.style?.displayPanel?.visitorStyle?.carousel != false) or (theme.config?.style?.displayPanel?.visitorStyle?.cardBorder != false) or (theme.config?.style?.displayPanel?.visitorStyle?.cardFollowTheme != false) or (theme.config?.style?.displayPanel?.visitorStyle?.sakura != false) or (theme.config?.style?.displayPanel?.visitorStyle?.danmaku != false) or (theme.config?.style?.displayPanel?.visitorStyle?.sidebarPosition != false))}"
         th:aria-label="#{nav.displaySettings}"
         aria-label="Display Settings"
         class="btn-plain scale-animation h-11 w-11 rounded-lg active:scale-90"
@@ -208,7 +208,7 @@ const className = Astro.props.class;
     <!-- 显示设置面板（I27）：与入口按钮同条件门控——总开关关闭或全部分区关闭时，
          面板及其 client:only chunk 不随页面传输（th:if 包住组件输出，含 module script 标签） -->
     <span
-      th:if="${theme.config?.style?.visitorStyle?.enable != false and ((theme.config?.style?.visitorStyle?.hue != false) or (theme.config?.style?.visitorStyle?.postListLayout != false) or (theme.config?.style?.visitorStyle?.cardStyle != false) or (theme.config?.style?.visitorStyle?.wallpaperMode != false) or (theme.config?.style?.visitorStyle?.wallpaperSettings != false) or (theme.config?.style?.visitorStyle?.transparent != false))}"
+      th:if="${theme.config?.style?.displayPanel?.visitorStyle?.enable != false and ((theme.config?.style?.displayPanel?.visitorStyle?.hue != false) or (theme.config?.style?.displayPanel?.visitorStyle?.postListLayout != false) or (theme.config?.style?.displayPanel?.visitorStyle?.cardStyle != false) or (theme.config?.style?.displayPanel?.visitorStyle?.wallpaperMode != false) or (theme.config?.style?.displayPanel?.visitorStyle?.wallpaperSettings != false) or (theme.config?.style?.displayPanel?.visitorStyle?.transparent != false) or (theme.config?.style?.displayPanel?.visitorStyle?.fullscreenLayout != false) or (theme.config?.style?.displayPanel?.visitorStyle?.gradient != false) or (theme.config?.style?.displayPanel?.visitorStyle?.carousel != false) or (theme.config?.style?.displayPanel?.visitorStyle?.cardBorder != false) or (theme.config?.style?.displayPanel?.visitorStyle?.cardFollowTheme != false) or (theme.config?.style?.displayPanel?.visitorStyle?.sakura != false) or (theme.config?.style?.displayPanel?.visitorStyle?.danmaku != false) or (theme.config?.style?.displayPanel?.visitorStyle?.sidebarPosition != false))}"
       th:remove="tag"
     >
       <DisplaySettings client:only="svelte" />
