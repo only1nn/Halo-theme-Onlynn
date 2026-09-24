@@ -15,6 +15,7 @@ const { iconClass = "text-[1.75rem] mb-1" } = Astro.props;
   th:if="${not #strings.isEmpty(theme.config?.layout?.mobileMenu?.logo)}"
   th:src="${theme.config?.layout?.mobileMenu?.logo}"
   th:alt="${site.title}"
+  sizes="4rem"
   class="navbar-logo h-7 w-auto shrink-0 rounded object-contain"
 />
 <span

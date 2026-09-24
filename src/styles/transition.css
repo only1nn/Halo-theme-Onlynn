@@ -66,9 +66,17 @@ html.swup-visited #right-sidebar {
   animation-delay: min(130ms, var(--dur-entry-max, 400ms));
 }
 
+/* 两侧边栏不做入场淡入 —— 直接以可见态参与首帧。
+   原因：这条淡入是「opacity: 0 + 动画补间到可见」，而动画一旦被浏览器重建（JS 包裹滚动
+   容器、重排布局都会）就会从头重放，甚至被挂起不推进，表现成「侧栏过一会儿才出来」——
+   站长的实际反馈就是左右侧栏偶尔慢约 1 秒。而边栏内容是静态的、位置在页面两端，
+   这条淡入在观感上几乎没有收益；#right-sidebar 换页后本来也已被强制无动画（见上方
+   html.swup-visited 规则），这里统一到首次加载。正文与卡片的入场动画保留。 */
 #sidebar,
 #right-sidebar {
-  animation-delay: min(100ms, var(--dur-entry-max, 400ms));
+  animation: none;
+  opacity: 1;
+  translate: none;
 }
 
 #swup-container {

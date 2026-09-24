@@ -2,10 +2,10 @@
 
 ## 总览
 
-| 工作流    | 触发方式                             | 用途                                                           |
-| --------- | ------------------------------------ | -------------------------------------------------------------- |
-| `ci.yaml` | push 到 main（版本增大合规时）/ 手动 | 构建 + 质量门 + 上传 artifact；自动或手动发布到 GitHub Release |
-| `cd.yaml` | Release 发布（tag 以 v 开头） / 手动 | 将 Release 中的主题包同步到 Halo 应用市场                      |
+| 工作流    | 触发方式                                              | 用途                                                           |
+| --------- | ----------------------------------------------------- | -------------------------------------------------------------- |
+| `ci.yaml` | push 到默认分支 main / master（版本增大合规时）/ 手动 | 构建 + 质量门 + 上传 artifact；自动或手动发布到 GitHub Release |
+| `cd.yaml` | Release 发布（tag 以 v 开头） / 手动                  | 将 Release 中的主题包同步到 Halo 应用市场                      |
 
 公共组件：
 
@@ -17,7 +17,7 @@
 
 **触发方式**：
 
-- **push 到 `main`**：`scripts/check-version-bump.mjs` 读取当前 `theme.yaml` 的 `version`，与上一提交（HEAD~1）对比，版本增大且 semver 格式合法时自动执行完整发布流程
+- **push 到 `main` / `master`**：`scripts/check-version-bump.mjs` 读取当前 `theme.yaml` 的 `version`，与上一提交（HEAD~1）对比，版本增大且 semver 格式合法时自动执行完整发布流程
 - **手动（workflow_dispatch）**：直接构建；发布行为由 `publish-github` / `sync-halo` 显式开关决定（兜底场景）
 
 **排障日志**：`version-check` 总是运行（不按事件静默跳过），逐步输出触发事件与决策（`::notice::`）；`build` job 开头打印运行参数（事件、`publish-github`/`tag`/`sync-halo`）与本次各发布步骤的执行计划，任何跳过的决策都有明确原因可见。
@@ -72,8 +72,8 @@
 
 | #   | 触发路径                                              | 前置条件                                      | version-check  | 构建链  | 质量门 | 自动创建 tag                       | 上传 Release               | 结果                                           |
 | --- | ----------------------------------------------------- | --------------------------------------------- | -------------- | ------- | ------ | ---------------------------------- | -------------------------- | ---------------------------------------------- |
-| 1a  | push 到 main                                          | 版本较上一提交**增大**且 semver 合规          | 运行 → `true`  | ✅      | ✅     | ✅ 创建 `vX.Y.Z`（远程已有则跳过） | ✅ 创建或更新              | **自动发布**                                   |
-| 1b  | push 到 main                                          | 版本**未增大**或不合规                        | 运行 → `false` | ❌ 跳过 | ❌     | ❌                                 | ❌                         | 仅检测，不构建                                 |
+| 1a  | push 到 main/master                                   | 版本较上一提交**增大**且 semver 合规          | 运行 → `true`  | ✅      | ✅     | ✅ 创建 `vX.Y.Z`（远程已有则跳过） | ✅ 创建或更新              | **自动发布**                                   |
+| 1b  | push 到 main/master                                   | 版本**未增大**或不合规                        | 运行 → `false` | ❌ 跳过 | ❌     | ❌                                 | ❌                         | 仅检测，不构建                                 |
 | 2a  | 手动 + publish-github=true + 填 tag + sync-halo=true  | 自动补全 `v` 前缀并追加后缀后，需等于期望 tag | 跳过           | ✅      | ✅     | ❌ 仅 push 运行                    | ✅ 校验通过后创建/更新     | 发布到指定 tag，随后 cd 自动同步               |
 | 2b  | 手动 + publish-github=true + 填 tag + sync-halo=false | 同上                                          | 跳过           | ✅      | ✅     | ❌                                 | ✅ 注入跳过标记后创建/更新 | 发布到指定 tag，**cd 跳过应用市场同步**        |
 | 2c  | 手动 + publish-github=true + tag 未填                 | —                                             | 跳过           | —       | —      | ❌                                 | ❌                         | ❌ **报错终止**（提示显式关闭或填 tag）        |
@@ -100,7 +100,7 @@
 ### 跨工作流串联与边界情况
 
 ```
-push(main) 版本增大 ─┐
+push(main/master) 版本增大 ─┐
                      ├─► ci.yaml 构建+质量门 ──► 自动建 tag vX.Y.Z ──► Release 发布
 手动 ci.yaml 输入 tag ┘                                       │
                                                               ▼
@@ -117,7 +117,7 @@ push(main) 版本增大 ─┐
 **自动发布（推荐）**：
 
 1. 更新 `theme.yaml` 的 `version`（版本唯一来源），编写根目录 `release.md`（Release 说明）
-2. 推送到 main → `ci.yaml` 检测版本增大后自动：构建 → 创建 tag（`vX.Y.Z`）→ 发布 GitHub Release
+2. 推送到 main / master → `ci.yaml` 检测版本增大后自动：构建 → 创建 tag（`vX.Y.Z`）→ 发布 GitHub Release
 3. Release 发布后 `cd.yaml` 自动同步到 Halo 应用市场
 
 **手动兜底**：手动触发 `ci.yaml` 输入 tag（如 `v1.0.8`）→ 构建 + 创建/更新 Release；手动触发 `cd.yaml` 输入 tag 可重新同步应用市场

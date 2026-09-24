@@ -237,11 +237,7 @@ const style = Astro.props.style;
     // 站点统计工具函数
     function formatNumber(num) {
       if (num >= 10000) {
-        return window.__onlynnBigNum(
-          num,
-          "widget.siteStats.tenThousand",
-          "k",
-        );
+        return window.__onlynnBigNum(num, "widget.siteStats.tenThousand", "k");
       }
       return num.toLocaleString();
     }
@@ -249,9 +245,12 @@ const style = Astro.props.style;
     // 统计口径与 API 拓展包插件（extra-api 的 PostWordCountUtil）对齐
     function countWords(text) {
       if (!text) return 0;
+      // 先去掉 markdown 图片与链接语法，只留文字。
+      // ⚠ 与音乐播放器同理：正则字面量里「方括号紧挨方括号」或「方括号紧挨左圆括号」
+      // 会被 Thymeleaf 当内联标记，故用 \x5b / \x5d 转义写法。
       var cleaned = text
-        .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
-        .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+        .replace(new RegExp("!\\x5b[^\\x5d]*\\x5d\\([^)]*\\)", "g"), "")
+        .replace(new RegExp("\\x5b([^\\x5d]*)\\x5d\\([^)]*\\)", "g"), "$1")
         .replace(/&[a-zA-Z0-9#]+;/g, "")
         .replace(/\s+/g, " ")
         .trim();

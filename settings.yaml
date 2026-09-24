@@ -304,6 +304,8 @@ spec:
                 cardFollowTheme: true
                 sakura: true
                 danmaku: true
+                cursorStyle: true
+                cursorFx: true
                 sidebarPosition: true
               children:
                 - $formkit: switch
@@ -377,6 +379,22 @@ spec:
                   label: 弹幕留言切换
                   value: true
                   help: "访客可开关评论弹幕；后台「弹幕留言」关闭时前台不显示该开关"
+                - $formkit: switch
+                  name: cursorStyle
+                  id: visitorStyle_cursorStyle
+                  key: visitorStyle_cursorStyle
+                  if: "$get(visitorStyle_enable).value"
+                  label: 自定义光标切换
+                  value: true
+                  help: "访客可开关自定义光标；后台「鼠标风格」关闭时前台不显示该开关"
+                - $formkit: switch
+                  name: cursorFx
+                  id: visitorStyle_cursorFx
+                  key: visitorStyle_cursorFx
+                  if: "$get(visitorStyle_enable).value"
+                  label: 鼠标特效切换
+                  value: true
+                  help: "访客可开关鼠标移动 / 点击特效；后台「鼠标特效」关闭时前台不显示该开关"
                 - $formkit: switch
                   name: cardFollowTheme
                   id: visitorStyle_cardFollowTheme
@@ -2058,6 +2076,7 @@ spec:
           value:
             wordCount: true
             readingTime: true
+            heat: false
           children:
             - $formkit: switch
               name: wordCount
@@ -2069,6 +2088,11 @@ spec:
               label: 显示阅读时长
               value: true
               help: "按中文 400 字/分钟、西文 200 词/分钟估算，最少 1 分钟"
+            - $formkit: switch
+              name: heat
+              label: 显示文章热度
+              value: false
+              help: "按 24 + 浏览量×0.1 + 点赞×2 + 评论×3 计算的「℃」热度，分档配色；列表卡片与文章页都会显示"
         - $formkit: group
           name: codeBlock
           label: 代码块
@@ -3020,6 +3044,259 @@ spec:
           label: 新窗口打开
           value: true
           help: "开启后将在新标签页打开外部链接"
+    - group: enhance
+      label: 增强功能
+      formSchema:
+        - $formkit: group
+          name: tabTitle
+          label: 离屏文案
+          value:
+            enable: true
+            hidden: ""
+            visible: ""
+            hold: 2
+          children:
+            - $formkit: switch
+              name: enable
+              id: tabTitle_enable
+              label: 启用
+              value: true
+              help: "浏览器切到其它标签页 / 后台时，把标签页标题换成下面的文案"
+            - $formkit: text
+              name: hidden
+              id: tabTitle_hidden
+              if: "$get(tabTitle_enable).value"
+              label: 离屏文案（离开）
+              value: ""
+              help: "离开当前标签时显示的标题；留空则保持原标题不变"
+            - $formkit: text
+              name: visible
+              id: tabTitle_visible
+              if: "$get(tabTitle_enable).value"
+              label: 离屏文案（回来）
+              value: ""
+              help: "回到当前标签时短暂显示、随后自动恢复原标题的文案；留空则直接恢复"
+            - $formkit: number
+              name: hold
+              if: "$get(tabTitle_enable).value"
+              label: 回来文案停留秒数
+              value: 2
+              min: 1
+              max: 30
+              step: 1
+              help: "「回来」文案显示多久后恢复原标题"
+        - $formkit: group
+          name: cursor
+          label: 鼠标风格
+          value:
+            style: none
+            img_default: ""
+            img_pointer: ""
+            img_text: ""
+            img_zoom: ""
+            hotspot_x: 0
+            hotspot_y: 0
+          children:
+            - $formkit: select
+              name: style
+              id: cursor_style
+              label: 光标样式
+              value: none
+              options:
+                - value: none
+                  label: 关闭（系统光标）
+                - value: OwO
+                  label: OwO
+                - value: UwU
+                  label: UwU
+                - value: breeze
+                  label: 清风（深色）
+                - value: mellow
+                  label: 卡通圆润
+                - value: water_01
+                  label: 彩虹水滴（一）
+                - value: water_02
+                  label: 彩虹水滴（二）
+                - value: horse
+                  label: 彩虹小马
+                - value: debris
+                  label: 彩色碎片
+                - value: overwatch
+                  label: 守望先锋
+                - value: rainbow_rain
+                  label: 彩虹云雨
+                - value: marry
+                  label: 小樱茉莉
+                - value: black_cat
+                  label: 黑色小猫
+                - value: music_cat_01
+                  label: 音乐小猫（一）
+                - value: music_cat_02
+                  label: 音乐小猫（二）
+                - value: custom
+                  label: 自定义上传
+              help: "每套都是指针 / 手型 / 文本 / 缩放四态。前三套以外的素材四态用同一对文件，其余少数几套四态各自不同。触摸设备上无效"
+            - $formkit: attachment
+              name: img_default
+              if: "$get(cursor_style).value === 'custom'"
+              label: 默认指针
+              accepts:
+                - ".cur"
+                - ".ani"
+                - "image/*"
+              value: ""
+              help: "建议 .cur（含热点）；用 .png / .svg 时请填下面的热点偏移。留空则用系统默认指针"
+            - $formkit: attachment
+              name: img_pointer
+              if: "$get(cursor_style).value === 'custom'"
+              label: 手型（链接 / 按钮）
+              accepts:
+                - ".cur"
+                - ".ani"
+                - "image/*"
+              value: ""
+              help: "鼠标移到链接、按钮上时显示；留空则用系统默认"
+            - $formkit: attachment
+              name: img_text
+              if: "$get(cursor_style).value === 'custom'"
+              label: 文本（正文可选中区域）
+              accepts:
+                - ".cur"
+                - ".ani"
+                - "image/*"
+              value: ""
+              help: "鼠标移到正文文字上时显示；留空则用系统默认"
+            - $formkit: attachment
+              name: img_zoom
+              if: "$get(cursor_style).value === 'custom'"
+              label: 缩放（图片）
+              accepts:
+                - ".cur"
+                - ".ani"
+                - "image/*"
+              value: ""
+              help: "鼠标移到正文图片上时显示；留空则用系统默认"
+            - $formkit: number
+              name: hotspot_x
+              if: "$get(cursor_style).value === 'custom'"
+              label: 热点偏移 X
+              value: 0
+              min: 0
+              max: 64
+              step: 1
+              help: "光标文件的「点击点」水平像素位置；.cur / .ani 自带热点，填了也不生效（仅对 png / svg 有意义）"
+            - $formkit: number
+              name: hotspot_y
+              if: "$get(cursor_style).value === 'custom'"
+              label: 热点偏移 Y
+              value: 0
+              min: 0
+              max: 64
+              step: 1
+              help: "光标文件的「点击点」垂直像素位置，同上"
+        - $formkit: group
+          name: cursorFx
+          label: 鼠标特效
+          value:
+            move: none
+            emoji: "🌸,✨,💗,⭐,🎈"
+            click: none
+            words: "富强,民主,文明,和谐,自由,平等,公正,法治,爱国,敬业,诚信,友善"
+            opacity: 1
+            mobile: false
+          children:
+            - $formkit: select
+              name: move
+              id: cursorFx_move
+              label: 鼠标移动特效
+              value: none
+              options:
+                - value: none
+                  label: 关闭
+                - value: bubbleCursor
+                  label: 气泡跟随
+                - value: emojiCursor
+                  label: 表情包跟随
+                - value: springyEmojiCursor
+                  label: 弹性表情包跟随
+                - value: fairyDustCursor
+                  label: 仙女棒效果
+                - value: snowflakeCursor
+                  label: 雪花跟随
+                - value: followingDotCursor
+                  label: 圆点跟随
+                - value: ghostCursor
+                  label: 移动残影（疏）
+                - value: trailingCursor
+                  label: 移动残影（密）
+              help: "跟随鼠标移动的特效。移动端与「减少动效」偏好下默认不启用"
+            - $formkit: text
+              name: emoji
+              id: cursorFx_emoji
+              if: "$get(cursorFx_move).value === 'emojiCursor' or $get(cursorFx_move).value === 'springyEmojiCursor'"
+              label: 跟随表情列表
+              value: "🌸,✨,💗,⭐,🎈"
+              help: "用英文逗号分隔，随机取用"
+            - $formkit: select
+              name: click
+              id: cursorFx_click
+              label: 鼠标点击特效
+              value: none
+              options:
+                - value: none
+                  label: 关闭
+                - value: firework
+                  label: 烟花特效
+                - value: granule
+                  label: 粒子爆炸
+                - value: prosperous
+                  label: 富强民主
+                - value: heart
+                  label: 爱心特效
+              help: "在点击位置迸发的特效"
+            - $formkit: text
+              name: words
+              id: cursorFx_words
+              if: "$get(cursorFx_click).value === 'prosperous'"
+              label: 上浮文字列表
+              value: "富强,民主,文明,和谐,自由,平等,公正,法治,爱国,敬业,诚信,友善"
+              help: "用英文逗号分隔，随机取用"
+            - $formkit: number
+              name: opacity
+              id: cursorFx_opacity
+              label: 特效不透明度
+              value: 1
+              min: 0.1
+              max: 1
+              step: 0.1
+              help: "想把特效调淡一些就调小；1 为完全不透明"
+            - $formkit: switch
+              name: mobile
+              id: cursorFx_mobile
+              label: 移动端特效显示
+              value: false
+              help: "触摸设备上默认不显示鼠标特效，以免手指滑动时满屏粒子"
+        - $formkit: group
+          name: grayMode
+          label: 灰色模式
+          value:
+            enable: false
+            ranges: ""
+          children:
+            - $formkit: switch
+              name: enable
+              id: grayMode_enable
+              label: 启用
+              value: false
+              help: "全站以灰度显示，常用于哀悼日"
+            - $formkit: textarea
+              name: ranges
+              id: grayMode_ranges
+              if: "$get(grayMode_enable).value"
+              label: 生效日期段
+              value: ""
+              rows: 3
+              help: "每行一段，格式 MM/DD~MM/DD，例如 12/13~12/13。留空则长期生效；可跨年，如 12/30~01/02"
     - group: performance
       label: 速度优化
       formSchema:

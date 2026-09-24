@@ -62,6 +62,8 @@ export function setHue(hue: number): void {
     return;
   }
   r.style.setProperty("--hue", String(nextHue));
+  // 自定义光标要跟着换色（CursorEffects 的内联脚本监听该事件重算 data-URI）
+  window.dispatchEvent(new CustomEvent("hueChange"));
 }
 
 /** 解析模式的最终明暗：AUTO 跟随系统偏好 */
@@ -165,6 +167,8 @@ export interface VisitorSwitches {
   cardFollowTheme: boolean;
   sakura: boolean;
   danmaku: boolean;
+  cursorStyle: boolean;
+  cursorFx: boolean;
   sidebarPosition: boolean;
 }
 
@@ -197,6 +201,8 @@ function readVisitorSwitches(): VisitorSwitches {
     cardFollowTheme: enable && carrierBool("visitorCardFollowTheme", true),
     sakura: enable && carrierBool("visitorSakura", true),
     danmaku: enable && carrierBool("visitorDanmaku", true),
+    cursorStyle: enable && carrierBool("visitorCursorStyle", true),
+    cursorFx: enable && carrierBool("visitorCursorFx", true),
     sidebarPosition: enable && carrierBool("visitorSidebarPosition", true),
   };
 }
@@ -861,6 +867,63 @@ export function resetSakura(): void {
 export function resetDanmaku(): void {
   localStorage.removeItem("danmaku");
   applyDanmaku(getDefaultDanmaku());
+}
+
+/* ── 自定义光标 ──
+   光标本身由服务端渲染（body 变量）或内联脚本写入（内置绘制），
+   这里只维护 body 类：CSS 规则挂在 body:not(.cursor-off) 上，
+   访客关掉即整体退回系统光标，不必去动那些变量 */
+
+export function getDefaultCursorStyle(): boolean {
+  return carrierBool("cursorStyleDefault", true);
+}
+
+export function getStoredCursorStyle(): boolean {
+  if (!getVisitorSwitches().cursorStyle) return getDefaultCursorStyle();
+  const stored = localStorage.getItem("cursorStyle");
+  return stored == null ? getDefaultCursorStyle() : stored === "true";
+}
+
+export function applyCursorStyle(enabled: boolean): void {
+  document.body.classList.toggle("cursor-off", !enabled);
+}
+
+export function setCursorStyle(enabled: boolean): void {
+  localStorage.setItem("cursorStyle", String(enabled));
+  applyCursorStyle(enabled);
+}
+
+export function resetCursorStyle(): void {
+  localStorage.removeItem("cursorStyle");
+  applyCursorStyle(getDefaultCursorStyle());
+}
+
+/* ── 鼠标特效（移动 / 点击）──
+   与樱花、弹幕同款：脚本监听 cursorFxChange 事件决定起停 */
+
+export function getDefaultCursorFx(): boolean {
+  return carrierBool("cursorFxDefault", false);
+}
+
+export function getStoredCursorFx(): boolean {
+  if (!getVisitorSwitches().cursorFx) return getDefaultCursorFx();
+  const stored = localStorage.getItem("cursorFx");
+  return stored == null ? getDefaultCursorFx() : stored === "true";
+}
+
+export function applyCursorFx(enabled: boolean): void {
+  document.body.classList.toggle("cursor-fx-off", !enabled);
+  window.dispatchEvent(new CustomEvent("cursorFxChange", { detail: enabled }));
+}
+
+export function setCursorFx(enabled: boolean): void {
+  localStorage.setItem("cursorFx", String(enabled));
+  applyCursorFx(enabled);
+}
+
+export function resetCursorFx(): void {
+  localStorage.removeItem("cursorFx");
+  applyCursorFx(getDefaultCursorFx());
 }
 
 export function resetSidebarPositionToDefault(): void {
