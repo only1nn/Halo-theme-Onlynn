@@ -10,6 +10,7 @@ export interface ThemeConfig {
   footer: Footer;
   links: Links;
   external_link: ExternalLink;
+  enhance: Enhance;
 }
 
 /** 扩展页面设置：朋友圈 / 时间轴 / 技能（后台未配置的子组可能缺失，均视为可选） */
@@ -445,8 +446,18 @@ export interface Post {
   contentDisplay: ContentDisplay;
   toc: Toc;
   summary?: PostSummary;
+  /** 文章作者信息栏 */
+  meta?: PostMeta;
   /** 文章操作栏：点赞/分享/打赏 */
   actionBar?: PostActionBar;
+}
+
+/** 文章信息栏（文章页与列表卡片共用 PostMeta 组件） */
+export interface PostMeta {
+  wordCount?: boolean;
+  readingTime?: boolean;
+  /** 热度 ℃：24 + 浏览量×0.1 + 点赞×2 + 评论×3 */
+  heat?: boolean;
 }
 
 export interface PostActionBar {
@@ -583,6 +594,57 @@ export interface LinksOwnerInfo {
   owner_description: string;
   owner_url: string;
   owner_rss: string;
+}
+
+// ========== 增强功能 ==========
+/** 增强功能设置：离屏文案 / 鼠标风格 / 鼠标特效 / 灰色模式（后台未配置的子组可能缺失，均视为可选） */
+export interface Enhance {
+  tabTitle?: TabTitle;
+  cursor?: Cursor;
+  cursorFx?: CursorFx;
+  grayMode?: GrayMode;
+}
+
+/** 离屏文案：切到其它标签页时替换标题 */
+export interface TabTitle {
+  enable?: boolean;
+  /** 离开时显示的标题，留空则保持原标题不变 */
+  hidden?: string;
+  /** 回来时短暂显示的标题，留空则直接恢复 */
+  visible?: string;
+  /** 「回来」文案停留秒数 */
+  hold?: number;
+}
+
+/** 鼠标风格：none / 内置素材名（见 utils/cursor-styles.ts）/ custom（上传） */
+export interface Cursor {
+  style?: string;
+  img_default?: string;
+  img_pointer?: string;
+  img_text?: string;
+  img_zoom?: string;
+  hotspot_x?: number;
+  hotspot_y?: number;
+}
+
+/** 鼠标特效：move 与 click 各自独立，都为 none 时脚本不下载 */
+export interface CursorFx {
+  move?: string;
+  /** 表情跟随的表情列表，英文逗号分隔 */
+  emoji?: string;
+  click?: string;
+  /** 文字上浮的词表，英文逗号分隔 */
+  words?: string;
+  opacity?: number;
+  /** 触摸设备上是否启用 */
+  mobile?: boolean;
+}
+
+/** 灰色模式：留空 ranges 表示长期生效 */
+export interface GrayMode {
+  enable?: boolean;
+  /** 每行一段 MM/DD~MM/DD，支持多段与跨年段 */
+  ranges?: string;
 }
 
 // ========== 外链跳转 ==========

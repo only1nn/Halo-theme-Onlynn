@@ -1,9 +1,11 @@
 name: CI (Build & Release)
 
 on:
-  # 自动触发：push 到 main 且 theme.yaml 版本较上一提交增大合规时，构建并自动发布
+  # 自动触发：push 到默认分支（main 或 master）且 theme.yaml 版本较上一提交增大合规时，
+  # 构建并自动发布。两个分支名都列上：本仓库长期用 master，而 GitHub 新建仓库默认可能是
+  # main —— 只写一个会让自动发布静默不触发（版本检测会提示「版本未增大」）。
   push:
-    branches: [main]
+    branches: [main, master]
   # 手动触发：发布 tag 按 theme.yaml 版本 + 版本后缀自动推导（后缀支持 -rc1 等
   # 预发布段）；tag 留空用推导结果，填写时须与推导结果一致；两者均留空且关闭发布时仅构建
   workflow_dispatch:

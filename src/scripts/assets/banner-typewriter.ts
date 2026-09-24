@@ -22,7 +22,7 @@
     }
   }
 
-  var TypewriterEffect = function (el, lines, backspace) {
+  var TypewriterEffect = function (el, lines, backspace, startTyped) {
     this.el = el;
     this.lines = lines;
     this.index = 0;
@@ -38,6 +38,16 @@
     this.loop = lines.length > 1 || backspace;
 
     var self = this;
+    if (startTyped) {
+      /* 首行已经在 HTML 里渲染好了（布局里的内联脚本填的）。
+         直接当作「第一行已打完」：to type() 一次，它会因为 charIdx 已到末尾而进入
+         停留 → 回退 → 重打的循环。不动已渲染的文字，首屏就不会先空白一两秒。 */
+      self.charIdx = lines[0].length;
+      self.timeoutId = setTimeout(function () {
+        self.type();
+      }, self.pauseAfterType);
+      return;
+    }
     self.setText("");
     self.timeoutId = setTimeout(function () {
       self.type();
@@ -111,7 +121,6 @@
       el.__twInstance.destroy();
       delete el.__twInstance;
     }
-    el.textContent = "";
 
     var cursor = document.getElementById("banner-cursor");
     if (cursor) {
@@ -134,7 +143,18 @@
       .filter(Boolean);
     if (lines.length === 0) return;
 
-    el.__twInstance = new TypewriterEffect(el, lines, backspaceEnabled());
+    /* 内联脚本可能已经把第一行填好了（见 MainGridLayout 里的首屏填充）：
+       那种情况保留现有文字、从「已打完」状态起步；否则照旧清空重打。 */
+    var painted = (el.textContent || "").replace(/\u00A0/g, "").trim();
+    var startTyped = painted !== "" && painted === lines[0];
+    if (!startTyped) el.textContent = "";
+
+    el.__twInstance = new TypewriterEffect(
+      el,
+      lines,
+      backspaceEnabled(),
+      startTyped,
+    );
   }
 
   function runInitTW() {

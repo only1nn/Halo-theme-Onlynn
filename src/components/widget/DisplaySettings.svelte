@@ -61,6 +61,14 @@
     getDefaultDanmaku,
     setDanmaku,
     resetDanmaku,
+    getStoredCursorStyle,
+    getDefaultCursorStyle,
+    setCursorStyle,
+    resetCursorStyle,
+    getStoredCursorFx,
+    getDefaultCursorFx,
+    setCursorFx,
+    resetCursorFx,
     getStoredSidebarPosition,
     getDefaultSidebarPosition,
     setSidebarPosition,
@@ -114,6 +122,13 @@
   let danmaku = $state(getStoredDanmaku());
   const defaultDanmaku = getDefaultDanmaku();
   const showDanmaku = switches.danmaku && defaultDanmaku;
+  /* ── 自定义光标 / 鼠标特效（访客开关）── 同樱花：后台开启后才出现 */
+  let cursorStyle = $state(getStoredCursorStyle());
+  const defaultCursorStyle = getDefaultCursorStyle();
+  const showCursorStyle = switches.cursorStyle && defaultCursorStyle;
+  let cursorFx = $state(getStoredCursorFx());
+  const defaultCursorFx = getDefaultCursorFx();
+  const showCursorFx = switches.cursorFx && defaultCursorFx;
   /* ── 侧栏位置（访客开关）── */
   let sidebarPosition = $state<SidebarPosition>(getStoredSidebarPosition());
   const defaultSidebarPosition = getDefaultSidebarPosition();
@@ -123,7 +138,9 @@
   const hasWallpaperContent = $derived(
     showWallpaperMode || showWallpaper || showFullscreenLayout,
   );
-  const hasEffectsContent = $derived(showSakura || showDanmaku);
+  const hasEffectsContent = $derived(
+    showSakura || showDanmaku || showCursorStyle || showCursorFx,
+  );
   // 仅一个分区有内容时不显示标签栏，避免单标签的无效切换
   const showTabBar = $derived(
     [hasAppearanceContent, hasWallpaperContent, hasEffectsContent].filter(Boolean)
@@ -342,6 +359,26 @@
   function resetDanmakuBtn() {
     resetDanmaku();
     danmaku = getDefaultDanmaku();
+  }
+
+  function toggleCursorStyle() {
+    cursorStyle = !cursorStyle;
+    setCursorStyle(cursorStyle);
+  }
+
+  function resetCursorStyleBtn() {
+    resetCursorStyle();
+    cursorStyle = getDefaultCursorStyle();
+  }
+
+  function toggleCursorFx() {
+    cursorFx = !cursorFx;
+    setCursorFx(cursorFx);
+  }
+
+  function resetCursorFxBtn() {
+    resetCursorFx();
+    cursorFx = getDefaultCursorFx();
   }
 
   function resetFullscreenLayoutBtn() {
@@ -703,7 +740,7 @@
       <div class="section-title mb-3">
         {t("display.tabEffects", "特效")}
         <button aria-label={t("theme.resetDefault", "Reset to Default")} class="btn-regular w-7 h-7 rounded-md active:scale-90 will-change-transform"
-                class:opacity-0={sakura === defaultSakura && danmaku === defaultDanmaku} class:pointer-events-none={sakura === defaultSakura && danmaku === defaultDanmaku} on:click={() => { resetSakuraBtn(); resetDanmakuBtn(); }}>
+                class:opacity-0={sakura === defaultSakura && danmaku === defaultDanmaku && cursorStyle === defaultCursorStyle && cursorFx === defaultCursorFx} class:pointer-events-none={sakura === defaultSakura && danmaku === defaultDanmaku && cursorStyle === defaultCursorStyle && cursorFx === defaultCursorFx} on:click={() => { resetSakuraBtn(); resetDanmakuBtn(); resetCursorStyleBtn(); resetCursorFxBtn(); }}>
           <div class="text-(--btn-content)">
             <div icon="fa6-solid:arrow-rotate-left" class="icon-[fa6-solid--arrow-rotate-left] text-[0.875rem]"></div>
           </div>
@@ -721,6 +758,20 @@
           <span class="icon-[material-symbols--subtitles-outline-rounded] toggle-icon"></span>
           <span class="toggle-label">{t("display.danmaku", "评论弹幕")}</span>
           <span class="toggle" class:toggle-on={danmaku}><span class="toggle-knob"></span></span>
+        </button>
+      {/if}
+      {#if showCursorStyle}
+        <button type="button" class="toggle-row" class:toggle-on={cursorStyle} role="switch" aria-checked={cursorStyle} on:click={toggleCursorStyle}>
+          <span class="icon-[material-symbols--mouse-outline] toggle-icon"></span>
+          <span class="toggle-label">{t("display.cursorStyle", "自定义光标")}</span>
+          <span class="toggle" class:toggle-on={cursorStyle}><span class="toggle-knob"></span></span>
+        </button>
+      {/if}
+      {#if showCursorFx}
+        <button type="button" class="toggle-row" class:toggle-on={cursorFx} role="switch" aria-checked={cursorFx} on:click={toggleCursorFx}>
+          <span class="icon-[material-symbols--magic-button] toggle-icon"></span>
+          <span class="toggle-label">{t("display.cursorFx", "鼠标特效")}</span>
+          <span class="toggle" class:toggle-on={cursorFx}><span class="toggle-knob"></span></span>
         </button>
       {/if}
     {/if}

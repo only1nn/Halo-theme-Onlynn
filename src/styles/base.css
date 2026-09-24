@@ -42,3 +42,21 @@
   transform: translateY(-50%);
   transition: all 0.3s;
 }
+
+/* 灰色模式（哀悼日等）：后台配了日期段且今天命中时，Layout 的首帧脚本给
+   <html> 加 .gray-mode。判定在内容解析前完成，不会先出彩色再变灰。
+
+   ⚠ 为什么是 backdrop-filter 覆盖层，而不是 `html { filter: grayscale(1) }`：
+   filter 会让该元素成为**所有 fixed 后代的包含块**，挂在 html 上会让导航栏、
+   回顶按钮、移动端底栏这些 fixed 元素改成相对 html 的盒子（高度=文档高）定位，
+   于是跟着页面一起滚走。覆盖层方式只影响自己这一个元素，其余元素的定位一律不变。
+   灰度是逐像素运算，先合成再整体去色与逐层去色的结果一致。 */
+html.gray-mode::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  -webkit-backdrop-filter: grayscale(1);
+  backdrop-filter: grayscale(1);
+}

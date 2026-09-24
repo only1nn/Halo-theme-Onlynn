@@ -17,6 +17,7 @@ import "../styles/link-apply-modal.css";
 import "../styles/profile-status.css";
 import "../styles/code-block.css";
 import "../styles/danmaku.css";
+import "../styles/plugin-vars.css";
 
 // ── 第三方 ──
 import "overlayscrollbars/styles/overlayscrollbars.css";
@@ -130,6 +131,70 @@ function removeOnloadAnimation(e: AnimationEvent) {
 }
 document.addEventListener("animationend", removeOnloadAnimation);
 document.addEventListener("animationcancel", removeOnloadAnimation);
+
+/*
+  入场动画兜底清扫：入场动画是「opacity: 0 + 动画补间到 1」，一旦动画没能正常跑完，
+  元素就停在透明状态。实测会发生的两种情形：
+   - 动画被浏览器**冻结/挂起**：标签页在后台、主线程长时间被占时，动画的 currentTime
+     不再推进（但 playState 仍可能报 running、startTime 也可能非 null，只看状态会误判）；
+   - 动画被**重建后重放**：JS 包裹滚动容器、重排布局会让浏览器重建动画对象，
+     若重建发生在首轮结束前，就会一直循环「重放 → 还没结束又重建」。
+  两者都表现为侧栏/正文「过一会儿才显示出来」，而摘类只靠 animationend —— 等不到就永远隐形。
+
+  所以判据用**进度**而不是状态：隔一段时间两次读 currentTime，没推进（或压根没有动画）就是卡住，
+  摘掉 onload-animation 类回到静态可见；最后再无条件兜底一次，保证内容不可能一直不可见。
+*/
+function onloadAnimProgress(el: Element): number | null {
+  const node = el as HTMLElement;
+  const anims = node.getAnimations ? node.getAnimations() : [];
+  if (!anims.length) return null; // 没有动画对象：不是被冻结，是压根没跑
+  let max = 0;
+  anims.forEach((a) => {
+    const t = Number(a.currentTime);
+    if (isFinite(t) && t > max) max = t;
+  });
+  return max;
+}
+
+const onloadProgress = new Map<Element, number | null>();
+
+function snapshotOnloadProgress() {
+  onloadProgress.clear();
+  document.querySelectorAll(".onload-animation").forEach((el) => {
+    onloadProgress.set(el, onloadAnimProgress(el));
+  });
+}
+
+/** @param force true 时无条件摘类（最后兜底） */
+function rescueStuckOnload(force: boolean) {
+  const finish = (el: Element) => {
+    el.classList.remove("onload-animation");
+  };
+  document.querySelectorAll(".onload-animation").forEach((el) => {
+    const prev = onloadProgress.get(el);
+    const now = onloadAnimProgress(el);
+    const frozen = now === null || (prev !== undefined && prev === now);
+    if (force || frozen) finish(el);
+  });
+  ["banner-title", "banner-subtitle-wrapper"].forEach((id) => {
+    const el = document.getElementById(id) as HTMLElement | null;
+    if (!el) return;
+    const prev = onloadProgress.get(el);
+    const now = onloadAnimProgress(el);
+    const frozen = now === null || (prev !== undefined && prev === now);
+    if (!force && !frozen) return;
+    el.style.opacity = "1";
+    el.style.animation = "none";
+  });
+}
+
+/* 时序：600ms 采样 → 1000ms 比对（冻结的当场救回）→ 1800ms 再比一次 →
+   2500ms 无条件兜底（最慢的舒缓档 500ms 延迟 + 400ms 时长 = 900ms 跑完，留足余量） */
+window.setTimeout(snapshotOnloadProgress, 600);
+window.setTimeout(() => rescueStuckOnload(false), 1000);
+window.setTimeout(snapshotOnloadProgress, 1400);
+window.setTimeout(() => rescueStuckOnload(false), 1800);
+window.setTimeout(() => rescueStuckOnload(true), 2500);
 
 // ── Banner 显示 ──
 // 揭示逻辑（媒体就绪判定 + 首帧门槛 + 摘 opacity-0/scale-105）统一放在
