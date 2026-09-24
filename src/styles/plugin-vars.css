@@ -1,0 +1,58 @@
+/*
+  插件 CSS 变量对齐。
+
+  搜索、超链接卡片这类官方插件都提供了官方的 CSS 变量接口，默认值是插件自己的设计
+  语言（偏冷灰），装上就像「外来的」。这里把它们映射到主题自己的 token，不写一行 JS、
+  也不去动插件的 Shadow DOM。
+
+  ⚠ 变量名逐个从插件源码核对过，不含推测：
+    - halo-dev/plugin-search-widget  packages/search-widget/var.css + 组件源码
+    - halo-sigs/plugin-editor-hyperlink-card  组件源码
+  「联系表单」「文章订阅」两组没有收录 —— 在 GitHub 上找不到这两个插件的公开仓库
+  （halo-sigs / halo-dev 下均无），无法核对变量名。宁可不写，也不写一批可能不存在
+  的变量名占位。
+
+  为什么用 !important：插件自己用 `.dark`、`[data-color-scheme="dark"]` 等选择器重定义
+  了同一批变量，与 `:root` 同特异性、且插件样式由前端运行期注入（源序不可控）。加
+  !important 后与源序无关地稳定生效；值本身仍是主题 token，深浅色模式跟随主题自动切换
+  （token 在 `:root.dark` 下已经变过一遍）。
+*/
+:root {
+  /* ── 搜索组件 ── */
+  --halo-search-widget-base-font-family: inherit !important;
+  --halo-search-widget-base-font-size: 1rem !important;
+  --halo-search-widget-base-border-radius: var(--radius-large) !important;
+  --halo-search-widget-base-rounded: var(--radius-large) !important;
+  --halo-search-widget-primary-color: var(--primary) !important;
+  --halo-search-widget-content-color: var(--deep-text) !important;
+  --halo-search-widget-muted-color: color-mix(
+    in oklab,
+    var(--deep-text) 62%,
+    transparent
+  ) !important;
+  --halo-search-widget-base-bg-color: var(--page-bg) !important;
+  --halo-search-widget-modal-bg-color: var(--card-bg) !important;
+  --halo-search-widget-modal-layer-color: rgb(0 0 0 / 45%) !important;
+  --halo-search-widget-hit-bg-color: var(--btn-regular-bg) !important;
+  --halo-search-widget-divider-color: var(--line-color) !important;
+  --halo-search-widget-kbd-border-color: var(--line-color) !important;
+  --halo-search-widget-kbd-shadow: 0 2px 0 0 var(--line-color) !important;
+
+  /* ── 编辑器超链接卡片 ── */
+  --halo-hyperlink-card-title-color: var(--deep-text) !important;
+  --halo-hyperlink-card-inline-title-color: var(--deep-text) !important;
+  --halo-hyperlink-card-description-color: color-mix(
+    in oklab,
+    var(--deep-text) 62%,
+    transparent
+  ) !important;
+  --halo-hyperlink-card-link-color: var(--primary) !important;
+  --halo-hyperlink-card-border-color: var(--line-color) !important;
+  --halo-hyperlink-card-border-hover-color: var(--primary) !important;
+  --halo-hyperlink-card-bg-color: var(--card-bg) !important;
+  --halo-hyperlink-card-inline-bg-color: var(--btn-regular-bg) !important;
+  --halo-hyperlink-card-inline-hover-bg-color: var(
+    --btn-regular-bg-hover
+  ) !important;
+  --halo-hyperlink-card-skeleton-color: var(--btn-regular-bg) !important;
+}

@@ -1,0 +1,90 @@
+---
+import { cursorStyleExpr, cursorEnabledSpel } from "../utils/cursor-styles";
+/*
+  鼠标风格（光标）+ 鼠标特效的脚本引入。
+
+  光标素材是 Dream2.0 Plus 那套打包好的 .cur（见 public/assets/cursors/SOURCES.md），
+  与它的设置项一一对应。这里只做两件事：
+
+  1. 两个 `th:if` 门控的 `<style>`：前者用 th:utext 输出四态变量（内置素材与自定义上传
+     的 URL 都由 utils/cursor-styles.ts 在构建期拼好），后者把四态的选择器映射到
+     `--cursor-default/pointer/text/zoom` 上。所以这一层完全没有脚本：
+     关掉浏览器 JS 光标照样是选中的那套，也不存在「脚本没跑就没光标」的崩坏态。
+  2. 鼠标特效的脚本引入（与光标样式各自独立开关）。
+
+  门控口径一致：光标选「关闭」就不吐这段 style，特效两个都关就不请求脚本。
+*/
+
+const cursorEnabled = cursorEnabledSpel;
+
+/* 鼠标特效走另一个脚本：两个都「关闭」时一次请求都不发 */
+const fxCfg = "theme.config?.enhance?.cursorFx";
+const fxEnabled = `(${fxCfg}?.move != 'none' or ${fxCfg}?.click != 'none')`;
+---
+
+<!-- 四态变量的值：内置素材表与自定义上传都拼在这一条声明里，由 cursor-styles.ts 生成。
+     ⚠ 用 th:utext 取值，不要用 Thymeleaf 的内联标记（那种写法本身就要写一对方括号 +
+     圆括号，注释里也一样会被 Thymeleaf 当表达式求值）。挂在 html 上还有个好处：
+     进 head 即生效，首帧就是选中的那套光标，不会闪一下系统箭头 -->
+<style is:inline th:if={`\${${cursorEnabled}}`} th:utext={cursorStyleExpr}
+></style>
+
+<style is:inline th:if={`\${${cursorEnabled}}`}>
+  /* 规则常驻，具体值由 --cursor-* 变量提供。每条都带关键字兜底：
+     光标图加载失败就退化成系统光标，不会出现「没有光标」 */
+  body {
+    cursor: var(--cursor-default, auto);
+  }
+  a,
+  button,
+  [role="button"],
+  summary,
+  label[for],
+  select,
+  .btn-card,
+  .btn-regular,
+  .link,
+  .copy-btn,
+  #back-to-top,
+  #display-settings-switch {
+    cursor: var(--cursor-pointer, pointer);
+  }
+  p,
+  li,
+  td,
+  th,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  code,
+  pre,
+  blockquote,
+  figcaption,
+  input[type="text"],
+  input[type="search"],
+  textarea {
+    cursor: var(--cursor-text, text);
+  }
+  .markdown-content img,
+  .custom-md img,
+  figure img {
+    cursor: var(--cursor-zoom, zoom-in);
+  }
+  /* 访客在面板里关掉自定义光标：revert 回滚到浏览器默认的光标规则
+     （链接仍是手型、正文仍是文本，不是一刀切成 auto） */
+  body.cursor-off,
+  body.cursor-off * {
+    cursor: revert !important;
+  }
+</style>
+
+<!-- 鼠标特效：移动 / 点击两类，脚本自身读 #theme-config → enhance.cursorFx。
+     ⚠ 顺序无要求，但它必须在 body 存在后才执行 —— defer 满足；画布由脚本按需建 -->
+<script
+  th:if={`\${${fxEnabled}}`}
+  src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/cursor-fx.js?v=${ASSET_VERSION}`}
+  defer
+  is:inline></script>

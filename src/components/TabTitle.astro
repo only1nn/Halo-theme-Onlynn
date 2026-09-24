@@ -1,0 +1,19 @@
+---
+/*
+  离屏文案（标签页标题）脚本引入。
+
+  渲染门：总开关打开，且两条文案至少填了一条 —— 都没填时连脚本都不下载
+  （与樱花、弹幕同样口径：用不到的功能不该占一次请求）。
+  脚本自身读 #theme-config → style.tabTitle，故此处只做门控与引入。
+*/
+const cfg = "theme.config?.enhance?.tabTitle";
+const visible =
+  `${cfg}?.enable != false and ` +
+  `(!#strings.isEmpty(${cfg}?.hidden) or !#strings.isEmpty(${cfg}?.visible))`;
+---
+
+<script
+  th:if={`\${${visible}}`}
+  src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/tab-title.js?v=${ASSET_VERSION}`}
+  defer
+  is:inline></script>
