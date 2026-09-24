@@ -159,7 +159,8 @@ const className = Astro.props.class;
       // 读取后台配置：留空则使用内置默认
       var API = card.getAttribute("data-api") || "https://v1.hitokoto.cn/";
       var fallbackText =
-        card.getAttribute("data-fallback-text") || "世界很大，开心第一。";
+        card.getAttribute("data-fallback-text") ||
+        "愿做檐下一株草，不争不抢，自在生长。";
       var fallbackSource =
         card.getAttribute("data-fallback-source") || "楠香自语";
 

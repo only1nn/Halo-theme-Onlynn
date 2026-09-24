@@ -1424,7 +1424,7 @@ spec:
                   key: widget_hitokoto_fallback_text
                   preserve: true
                   label: 获取失败文案
-                  value: "世界很大，开心第一。"
+                  value: "愿做檐下一株草，不争不抢，自在生长。"
                   help: "一言获取失败时显示的句子"
                 - $formkit: text
                   if: "$value.value === 'hitokoto'"
@@ -1661,7 +1661,7 @@ spec:
                   key: right_widget_hitokoto_fallback_text
                   preserve: true
                   label: 获取失败文案
-                  value: "世界很大，开心第一。"
+                  value: "愿做檐下一株草，不争不抢，自在生长。"
                   help: "一言获取失败时显示的句子"
                 - $formkit: text
                   if: "$value.value === 'hitokoto'"
