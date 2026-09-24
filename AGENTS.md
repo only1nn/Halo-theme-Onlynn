@@ -125,7 +125,15 @@ Halo 应用市场的 Markdown 渲染器不支持 `<picture>`（GitHub 深浅色�
 
 导航栏「显示设置」面板允许访客切换样式（参考 firefly）。后台开关在 `settings.yaml` 的 `layout.mobileMenu.visitorStyle` 子组，缺省视为开启；子项开关（主题色相/文章布局/卡片样式/壁纸模式/壁纸设置/透明设置）仅在总开关 `enable` 开启时显示，瀑布流与波浪不再单独设开关（分别随卡片样式、壁纸设置区联动）。
 
-**localStorage 键清单（改键名需三处同步）**：`postListLayout`（list/grid）、`cardHoverLift`、`navbarBlur`（bool 字符串）、`postListMasonry`（bool 字符串，仅网格布局生效）、`wallpaperOpacity`（0–1）、`wallpaperBlur`（px 数值）、`wallpaperCardAlpha`（0–1）、`bannerDisplay`（disabled/banner/fullscreen/transparent）、`bannerWave`（bool 字符串）、`bannerTitle`（bool 字符串，首页壁纸标题）。开关关闭时对应键会被忽略并清理（与 `fixed` 固定色调、`__eecs` 语义一致）。
+**localStorage 键清单（改键名需三处同步）**：`postListLayout`（list/grid）、`cardHoverLift`、`navbarBlur`（bool 字符串）、`postListMasonry`（bool 字符串，仅网格布局生效）、`wallpaperOpacity`（0–1）、`wallpaperBlur`（px 数值）、`wallpaperCardAlpha`（0–1）、`bannerDisplay`（disabled/banner/fullscreen/transparent）、`bannerWave`（bool 字符串）、`bannerTitle`（bool 字符串，首页壁纸标题）、`sakura`/`danmaku`/`cursorStyle`/`cursorFx`（bool 字符串，分别由 `applySakura`/`applyDanmaku`/`applyCursorStyle`/`applyCursorFx` 维护 body 类）。开关关闭时对应键会被忽略并清理（与 `fixed` 固定色调、`__eecs` 语义一致）。
+
+**光标四态变量的来源（v1.2.0 起）**：`src/utils/cursor-styles.ts` 是唯一真值 —— 一张「样式名 → 四态文件名」的映射表，并负责把它拼成一段 SpEL。`CursorEffects.astro` 用一个 `th:inline="css"` 的 `<style>` 配 `set:html` 把 `[(${…})]` 交给 Thymeleaf 求值，命中那套输出四条 `--cursor-*` 声明（约 350 字节），其余分支求值为空串。要点：
+
+- **不要把这段塞进 body 的 `th:style`**：那是「引号属性」，Astro 对引号属性不做 JS 插值，`${cursorBuiltinExpr}` 会原样进模板。引号属性只能写死内容，要拼就得用 JS 表达式属性或这里的 `set:html`。
+- **`#theme.assets()` 自己会补 `/assets` 前缀**，传 `/cursors/…` 而不是 `/assets/cursors/…`（传错会得到 `/assets/assets/…` 404）。
+- **SpEL 拼接**：每个三元都要自己带括号（`?:` 优先级低于 `+`），两段之间要有 `+`（`join(" + ")` 不给最后一项补尾巴）。这两处写错都是 `EL1041E`。
+- 门控用「枚举合法值」而不是 `!= 'none'`：这样已下线的旧值（如早期的 `theme`）会干净退回系统光标，而不是留下一批空变量把链接的手型也一起带走。
+- 素材与出处：`public/assets/cursors/`（只收录原素材包实际引用的 37 个文件），见该目录的 `SOURCES.md`。
 
 **壁纸模式切换约定**：`#banner-wrapper` / `#scroll-down-indicator` / `#banner-credit` / 波浪容器恒渲染（已去 `th:if`），显隐与定位全由 `html[data-banner-display]` 门控（`components.css`），`applyBannerDisplay` 同时切 `body.enable-banner` 并按模式重算 `--banner-height-extend` px（全屏 65vh / 横幅 30vh，数值来自 `constants.ts`）。波浪关闭用 `body.wave-disabled`（CSS 隐藏），开启时由后台默认 + `wave.js` 的 desktop_only 守卫决定。
 
@@ -145,8 +153,50 @@ Halo 应用市场的 Markdown 渲染器不支持 `<picture>`（GitHub 深浅色�
 - **banner 脚本**：`MainGridLayout.astro` 中 6 个 banner 脚本包在 `{isHomePage && <div th:with={bannerThWith()} th:remove="tag">}` 内，按 `mode == 'carousel'` / `isVideo` / `mobileActive` 精确门控——与 `#banner-wrapper` 的 `th:with` 同源表达式，新增模式时两处条件必须一致。
 - **friends/links 合并**：`friends.bundle.js`（4 脚本合并）在 `friends.astro` 以 `not #lists.isEmpty(allItems.items)` 门控（空列表不加载）；`links.bundle.js`（5 脚本合并）恒加载，link-apply/random-visit 的外部门控已移除，改由脚本内部元素存在性守卫承担（新增 links 功能时往 bundle 加 IIFE + 守卫）。
 - **`window.__themeConfig` 缓存契约**：`#theme-config` JSON 由首个消费脚本 parse 并写入 `window.__themeConfig`，其余脚本（含 public/ legacy 的 wave/banner-carousel/banner-src-switch、WelcomePopup 内联脚本）直接复用，不得各自重复 `JSON.parse`。
+- **增强功能三件套**：`tab-title.js`（`TabTitle.astro`）以「总开关开 且 两条文案至少填一条」门控；`cursor-fx.js`（`CursorEffects.astro`）以「移动特效或点击特效任一非 none」门控；灰色模式没有独立脚本，判定写在 `Layout.astro` 头部那段 `th:inline="javascript"` 的首帧脚本里（只加一个 `html` 类，表现见 `base.css`）。三者都遵守「用不到就不下载 / 不做」的同款口径。
+
+**灰色模式为什么不用 `html { filter: grayscale(1) }`**：`filter` 会让该元素成为**所有 fixed 后代的包含块**，挂在 `html` 上会让导航栏、浮动按钮、移动端底栏改成相对 `html` 的盒子（高度=文档高）定位、跟着页面滚走。现用一层 `position: fixed; inset: 0; backdrop-filter: grayscale(1)` 的 `html.gray-mode::after` 覆盖层：灰度是逐像素运算，先合成再整体去色与逐层去色结果一致，且不影响任何其它元素的定位。改动这块时**务必回归「滚动后 fixed 元素是否还在原位」**。
 
 **面板文案 i18n**：`display.*` 键需同时维护 `i18n/*.properties` 与 `Layout.astro` 的 `i18nInlineScript` 两处，缺一会回退到组件内的中文兜底。
+
+**⚠ 内联脚本里的方括号组合会被 Thymeleaf 当表达式（踩过一次整页 500）**：HTML 模式下 Thymeleaf **默认对所有文本做内联处理**，`[[…]]`（text）与 `[(…)]`（utext）都是它的标记，范围包括 `<script>` 内容与 **HTML 注释**。所以内联脚本里写不出这些：
+
+- 正则字面量里的 `[(\d{2})`（音乐播放器的 LRC 时间戳）—— 它会一路找配对的括号，把后面大段脚本拿去当表达式解析 → `Could not parse as expression` → **响应中断、页面永远转圈**。留言板就这么挂的。
+- 注释里拿 `[(${...})]` 当示例文字 —— 连 HTML 注释也会被处理，于是拿 `...` 去求值 → `Exception evaluating SpringEL expression: "..."` → **错误页自己报错**。
+
+**`th:inline="none"` 挡不住**（音乐播放器那个脚本带着它照样炸，Halo 这套配置下实测如此）。唯一可靠的做法是从源头去掉那三个字符：方括号用十六进制转义写（`[` / `]`）搭 `new RegExp(...)`，注释里改掉写法。
+
+**构建期守卫**：`scripts/check-template-integrity.mjs` 已串进 `pnpm verify`（`pnpm build` 会先过这道关），扫产物模板的 `<script>` 内容与 HTML 注释，命中即退出 1。只有 `th:inline="javascript"` 的 script 豁免（项目里那几处靠它取服务端文案）。改内联脚本或写含示例代码的注释后，构建不过就是它在拦你。
+**注释里不要写「成对的标签字样」**：注释剥离脚本（`scripts/strip-html-comments.mjs`）按
+「注释丢掉、script/style 原样留」的单遍扫描改写过了 —— 早先的版本是先按 script/style 切开
+再删注释，于是**注释里出现的 `<style` 字样**会被当成真正的样式块起点，它「保护」了注释后半截
+一直到下一个闭合标签，同时把注释开头删掉，留下一个裸露的开标签，浏览器随后把后面三十万字符
+的正文全当原始文本吞掉（留言板表现是「样式没了、内容不见了」）。现在扫描器不会误判，
+但写这类注释时仍建议绕开成对的标签字样。
+
+**给 `<img>` 写准 `sizes`**：Halo 2.22+ 会对**没有 `srcset`** 的 `<img>` 自动补响应式 srcset
+（缩略图档位只有 400 / 800 / 1200 / 1600），并在**没有 `sizes`** 时补一个按整栏宽度猜的默认值
+（`(max-width:640px) 94vw, …, min(800px,85vw)`）。小槽位不写 `sizes` 就会被按 800px 选图 ——
+线上首页的卡片封面（实际 154px）与导航栏 logo（28px）都栽在这上面。规则：
+
+- 大图（Banner）写 `sizes="100vw"`；卡片封面写 `sizes="(max-width: 767px) 94vw, min(360px, 28vw)"`
+  （封面宽是 CSS 变量 `--post-card-cover-width` = 28%）；小图标类（logo / 菜单图标 / 页脚）
+  写 `2rem`~`4rem`，浏览器会取到最小的 400 档。
+- 主题已经自己输出 `srcset` 的图（如 Banner）Halo 会跳过，不受这条影响。
+- 新增任何 `<img>` 时都顺手写 `sizes`：这是纯收益、零风险的改动，不写就是几倍的流量浪费。
+  **入场动画是「透明门控」，改它要留兜底**：`.onload-animation` 的写法是 `opacity: 0` + 动画补间
+  到可见，摘类的唯一时机是 `animationend`。动画被浏览器挂起（后台标签页、主线程长时间被占时
+  `startTime` 为 null）或被重建后重放（JS 包裹滚动容器 / 重排布局会重建动画对象）时，那个事件
+  永远不会来，元素就停在透明态 —— 表现是「侧栏/正文过一会儿才出现」。`app.ts` 里有三次兜底清扫
+  （600/1500/3000ms，判据是「动画没在跑」）做保险。**新增带 `onload-animation` 的元素不用管**，
+  但要改入场动画机制时记得保留这层兜底：内容永远不能依赖动画跑完才可见。
+  并且**两侧边栏已不做入场淡入**（`transition.css`：`#sidebar, #right-sidebar { animation: none;
+opacity: 1 }`）—— 内容是静态的，不值得为淡入承担「可能晚出现」的风险。
+  **鼠标特效是「按需启动」**：`cursor-fx.js` 在页面加载时不建画布、不烘精灵、不排 rAF，
+  只置一个「已武装」标记，等第一次 `pointermove` / `pointerdown` 才真正开工（所以换页后画布
+  是被 Swup 删掉的，下一次指针事件会重建）。改这个脚本时**别把建画布挪回加载期** —— 那会
+  让每个页面都白分配一整屏画布；`_cursor-fx-test.cjs` 里有对应的断言（不动鼠标时零画布、
+  零文本测量）。
 
 ## 提交规范
 

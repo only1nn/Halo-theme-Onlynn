@@ -97,6 +97,9 @@ never breaks a page
   400 CJK characters or 200 words per minute
 - **Related posts**: by shared category, falling back to shared tag; the current post is
   filtered out, and the block hides itself when there is nothing to recommend
+- **Post heat ℃**: a heat score of `24 + views×0.1 + likes×2 + comments×3`, colour-coded in
+  three tiers (the hotter, the warmer). Shown on both list cards and the post page, using the
+  visit / like / comment figures Halo already tracks
 - **Table of contents**: sidebar / right column, plus a mobile popup
 - Previous/next post, license card, pinned-post highlight, share poster (with QR code),
   tip jar
@@ -119,6 +122,23 @@ never breaks a page
   Requires a comment plugin (see "Plugin compatibility")
 - **Subtitle typewriter**: multiple lines rotate; the "typewriter backspace" switch decides
   whether it erases and retypes (looping) or stops once typed
+- **Cursor style**: **14 built-in cursor sets** (OwO / UwU / breeze / mellow / rainbow water
+  drops ×2 / rainbow pony / coloured shards / Overwatch / rainbow rain / Sakura Majo /
+  black cat / music cat ×2), each covering pointer / hand / text / zoom; or upload your own
+  cursor files (fill in as many states as you like — empty ones fall back to the system
+  cursor). The assets come from Dream2.0 Plus; see `public/assets/cursors/SOURCES.md` for
+  provenance and what was left out
+- **Cursor effects**: the same option set as Dream2.0 Plus — 8 pointer-move effects (bubble /
+  emoji / springy emoji / fairy dust / snowflake / following dot / ghost trail (sparse) /
+  trailing cursor (dense)) + 4 click effects (firework / particle explosion / word drop /
+  hearts), plus opacity and a mobile switch
+- **Off-screen title text**: when the tab goes to the background, the title is swapped for
+  your "away" text; on return an "back" text is shown briefly before the original title is
+  restored. The dwell time is configurable, and the original title is refreshed on page
+  navigation so a stale title is never written back
+- **Grayscale mode**: desaturate the whole site over date ranges for days of mourning —
+  multiple ranges and ranges crossing new year (e.g. `12/30~01/02`) are supported. Decided on
+  the first frame, so there is no colour flash before it turns grey
 - **Wave at the banner footer**, gradient transition, wallpaper carousel
 - **Mobile bottom navigation**: a fixed bar whose items (home / archives / categories /
   tags / search / top) are individually configurable; the page reserves space for it and
@@ -181,16 +201,17 @@ table of contents
 
 ## Theme settings
 
-The settings page is organised into 10 groups. The ones you will touch most:
+The settings page is organised into 11 groups. The ones you will touch most:
 
-| Group           | What it configures                                                                                                                                                                                                              |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Layout**      | Page layout (two/three column), mobile bottom bar, banner mode, post card layout, menu bar, floating buttons, welcome popup                                                                                                     |
-| **Style**       | **Display settings panel** (visitor permissions + defaults), banner and wallpaper, title and subtitle, homepage social links, colour scheme, language, style switches, sakura, comment danmaku, animation speed, external fonts |
-| **Sidebar**     | Which widgets go in the left and right columns, plus per-widget options                                                                                                                                                         |
-| **Post**        | License card, related posts, article meta (word count / reading time), code blocks, content display, TOC, excerpt, action bar (including focus mode)                                                                            |
-| **Extra pages** | Moments, timeline, skills, RSS subscription page, sponsor page                                                                                                                                                                  |
-| **Footer**      | Site uptime, ICP/PSB filing info, links, custom links, footer friend links, footer link columns                                                                                                                                 |
+| Group            | What it configures                                                                                                                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Layout**       | Page layout (two/three column), mobile bottom bar, banner mode, post card layout, menu bar, floating buttons, welcome popup                                                                                                     |
+| **Style**        | **Display settings panel** (visitor permissions + defaults), banner and wallpaper, title and subtitle, homepage social links, colour scheme, language, style switches, sakura, comment danmaku, animation speed, external fonts |
+| **Sidebar**      | Which widgets go in the left and right columns, plus per-widget options                                                                                                                                                         |
+| **Post**         | License card, related posts, article meta (word count / reading time / heat), code blocks, content display, TOC, excerpt, action bar (including focus mode)                                                                     |
+| **Extra pages**  | Moments, timeline, skills, RSS subscription page, sponsor page                                                                                                                                                                  |
+| **Footer**       | Site uptime, ICP/PSB filing info, links, custom links, footer friend links, footer link columns                                                                                                                                 |
+| **Enhancements** | Off-screen title text, cursor style, cursor effects, grayscale mode                                                                                                                                                             |
 
 > **Style → Display settings panel is the single place for appearance configuration.**
 > The upper half controls what visitors may change; the lower half holds the defaults for
@@ -218,6 +239,41 @@ Everything under Style → Comment danmaku:
 
 Visitors can toggle it themselves under Display settings → Effects, provided
 "Visitor-adjustable style → Comment danmaku" is on.
+
+### Cursor style and cursor effects
+
+Both live under the Enhancements group. They are independent — you can enable either alone.
+
+**Cursor style**: one dropdown — 14 built-in sets, plus "off" and "upload your own".
+
+| Option  | Notes                                                                                       |
+| ------- | ------------------------------------------------------------------------------------------- |
+| Off     | Use the system cursors                                                                      |
+| 14 sets | Each covers pointer / hand / text / zoom; a few use different files per state (as upstream) |
+| Upload  | Your own cursor files, one slot per state; states left empty fall back to the system cursor |
+
+> **Provenance**: these `.cur` files come from the Dream2.0 Plus asset pack, which carries no
+> attribution for them. The theme ships only the 37 files that pack actually references
+> (~205 KB); the 50 unreferenced `.ani` files (~1.7 MB) were left behind. The provenance note
+> and the per-set file table live in `public/assets/cursors/SOURCES.md`.
+> Uploaded `.cur` / `.ani` files carry their own hotspot; for `.png` / `.svg` set the hotspot
+> offsets below. Has no effect on touch devices.
+
+**Cursor effects** (same options as the reference theme):
+
+| Field               | Notes                                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Pointer-move effect | Off / bubble / emoji / springy emoji / fairy dust / snowflake / following dot / ghost trail (sparse) / trailing cursor (dense) |
+| Click effect        | Off / firework / particle explosion / word drop / hearts (the last two have editable lists)                                    |
+| Opacity             | Lower it to make the effects subtler; 1 is fully opaque                                                                        |
+| Show on mobile      | Off by default on touch devices, so a finger drag does not fill the screen with particles                                      |
+
+> **Off means no download**: when both effects are set to "off", `cursor-fx.js` is not
+> included at all. Even when enabled it stays inert if the system preference is
+> "reduce motion", or on a touch device with "show on mobile" off. At runtime it does not
+> idle either: the frame loop stops once no particles are left, follower effects stop
+> scheduling frames once the pointer settles, it pauses while the tab is hidden, and
+> particle counts have hard caps (move ≤150, ≤60 per click, ≤300 total).
 
 ### Sponsor page options
 
@@ -360,6 +416,24 @@ Recommended alongside: **Feed** (RSS), **Sitemap**, **Shiki** (syntax highlighti
 > are comments in the database, the master switch under Style → Comment danmaku is on and
 > the page matches the configured scope, the danmaku appears — and it collapses by itself
 > when a page has no comments.
+
+### Aligning plugin CSS variables
+
+A few official plugins expose CSS variables, but their defaults belong to the plugin's own
+design language, so an installed plugin tends to look like a foreign body. The theme maps
+those variables onto its own palette and radii, so plugin pages stop breaking the colour
+scheme. **Pure CSS, no script:**
+
+| Plugin                | What is aligned                                                                                             |
+| --------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Search widget         | Primary / body text / muted text / modal and overlay backgrounds / dividers / kbd hints / radius / font     |
+| Editor hyperlink card | Title and description text / inline background and hover / border and hover border / link colour / skeleton |
+
+The variable names were checked one by one against each plugin's published source and live in
+`src/styles/plugin-vars.css`. Only the sets that could be verified are included — for plugins
+with no public source (contact form, article subscription) nothing was written rather than
+guessing at variable names. Fonts are aligned with `inherit`, so plugins follow along when you
+switch the theme's custom font.
 
 > **Shiki plugin tip**: set Style to `simple`, Light theme to `one-light` and Dark theme
 > to `one-dark-pro` to match the code-block frame the theme provides. The `mac` style
