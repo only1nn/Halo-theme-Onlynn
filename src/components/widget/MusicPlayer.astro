@@ -70,6 +70,7 @@ const layoutId = `${widgetId}-layout`;
               class="icon-[material-symbols--music-note-rounded] absolute text-2xl text-(--primary) opacity-40"
               aria-hidden="true"></span>
             <img
+              sizes="(max-width: 767px) 94vw, 24rem"
               class="music-cover relative z-10 h-full w-full object-cover opacity-0 transition-opacity duration-300"
               src=""
               alt=""
@@ -324,7 +325,7 @@ const layoutId = `${widgetId}-layout`;
   </WidgetLayout>
 </div>
 
-<script define:vars={{ widgetId }} is:inline>
+<script define:vars={{ widgetId }} is:inline th:inline="none">
   // @ts-nocheck 本脚本组多处使用 define:vars 注入常量，检查器无法感知（构建期注入）
   (() => {
     const widget = document.getElementById(widgetId);
@@ -377,7 +378,14 @@ const layoutId = `${widgetId}-layout`;
     const parseLRC = (lrc) => {
       if (!lrc) return [];
       const result = [];
-      const timeReg = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
+      // 时间戳形如方括号里包 mm:ss.xx。这里刻意不写正则字面量：**方括号紧挨左圆括号**
+      // 那三个字符的组合会被 Thymeleaf 当成它的内联起始标记（加 th:inline="none" 也挡不住，
+      // 实测过），它一路找配对的方括号加圆括号，把后面大段脚本当表达式解析 ——
+      // 留言板整页 500 就是这么来的。改用 \x5b / \x5d 转义写法，语义完全一致。
+      const timeReg = new RegExp(
+        "\\x5b(\\d{2}):(\\d{2})\\.(\\d{2,3})\\x5d",
+        "g",
+      );
       lrc.split("\n").forEach((line) => {
         const matches = Array.from(line.matchAll(timeReg));
         if (matches.length === 0) return;

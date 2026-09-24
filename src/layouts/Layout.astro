@@ -3,6 +3,8 @@ import ConfigCarrier from "../components/ConfigCarrier.astro";
 import WelcomePopup from "../components/control/WelcomePopup.astro";
 import WaveEffect from "../components/WaveEffect.astro";
 import SakuraEffect from "../components/SakuraEffect.astro";
+import TabTitle from "../components/TabTitle.astro";
+import CursorEffects from "../components/CursorEffects.astro";
 import MobileBottomBar from "../components/control/MobileBottomBar.astro";
 import {
   speedCustomStyleThWith,
@@ -87,6 +89,8 @@ const i18nInlineScript = `<script th:inline="javascript">
     "display.sakuraOff": \`[(#{display.sakuraOff})]\`,
     "display.danmaku": \`[(#{display.danmaku})]\`,
     "display.danmakuHint": \`[(#{display.danmakuHint})]\`,
+    "display.cursorStyle": \`[(#{display.cursorStyle})]\`,
+    "display.cursorFx": \`[(#{display.cursorFx})]\`,
     "post.codeCopy": \`[(#{post.codeCopy})]\`,
     "post.codeCopied": \`[(#{post.codeCopied})]\`,
     "post.codeCopyFailed": \`[(#{post.codeCopyFailed})]\`,
@@ -265,6 +269,47 @@ const themeSettingScript = `<script type="application/json" id="theme-config" th
       var __ecs =
         /*[[${theme.config?.style?.colorScheme?.color_scheme}]]*/ "auto";
       var __eecs = /*[[${theme.config?.layout?.mobileMenu?.enable_change_color_scheme ?: theme.config?.style?.colorScheme?.enable_change_color_scheme}]]*/ true;
+    </script>
+    <script th:inline="javascript" is:inline>
+      // 灰色模式：哀悼日等场景按日期段全站去色。
+      // 判定放在这里（head 内、内容解析前）完成，避免先出彩色再变灰的闪色；
+      // 只加一个 html 类，具体表现见 base.css 的 html.gray-mode。
+      (function () {
+        var enable = /*[[${theme.config?.enhance?.grayMode?.enable}]]*/ false;
+        if (!enable) return;
+        var raw = /*[[${theme.config?.enhance?.grayMode?.ranges}]]*/ "";
+
+        // 每行一段 MM/DD~MM/DD（~ - ～ 都认）；换算成 MMDD 整数比日期对象好比大小
+        var parse = function (s) {
+          var m = String(s).match(/^\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*$/);
+          return m ? Number(m[1]) * 100 + Number(m[2]) : NaN;
+        };
+
+        var lines = String(raw || "").split(/\r?\n/);
+        var today = (new Date().getMonth() + 1) * 100 + new Date().getDate();
+        var hit = false;
+        for (var i = 0; i < lines.length; i++) {
+          var parts = lines[i].split(/[~\-～]/);
+          if (parts.length < 2) continue;
+          var from = parse(parts[0]);
+          var to = parse(parts[1]);
+          if (isNaN(from) || isNaN(to)) continue;
+          // 跨年段（如 12/30~01/02）用「或」，同年段用「与」
+          if (
+            from <= to
+              ? today >= from && today <= to
+              : today >= from || today <= to
+          ) {
+            hit = true;
+            break;
+          }
+        }
+        // 留空 = 长期生效；填了内容却一行都没解析出来（写错格式）则按「不生效」处理 ——
+        // 否则一个笔误就会让全站长期变灰，比不灰更难排查
+        if (hit || !String(raw || "").trim()) {
+          document.documentElement.classList.add("gray-mode");
+        }
+      })();
     </script>
     <script th:inline="javascript" is:inline>
       // 默认语言引导：后台「样式设置 → 主题语言 → 默认语言」非跟随系统时，
@@ -463,7 +508,7 @@ const themeSettingScript = `<script type="application/json" id="theme-config" th
   <body
     class:list={["relative min-h-screen transition", { "is-home": isHomePage }]}
     th:classappend="${(bannerHasMedia ? ' enable-banner' : '') + (theme.config?.style?.styleSwitches?.navbar_blur ? ' navbar-blur-enabled' : '') + (theme.config?.style?.styleSwitches?.card_hover_lift != false ? ' card-hover-lift-enabled' : '') + (theme.config?.style?.styleSwitches?.card_border == true ? ' card-border-enabled' : '') + (theme.config?.style?.styleSwitches?.card_follow_theme == true ? ' card-follow-theme' : '') + (theme.config?.style?.styleSwitches?.banner_gradient == false ? ' gradient-disabled' : '')}"
-    th:style="|--bannerOffset: ${theme.config?.style?.bannerStyle?.position == 'top' ? '30vh' : (theme.config?.style?.bannerStyle?.position == 'bottom' ? '0' : '15vh')}; --transparent-wallpaper-opacity: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.wallpaperOpacity ?: 0.8}; --transparent-wallpaper-blur: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.wallpaperBlur ?: 10}px; --transparent-card-alpha: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.cardOpacity ?: 0.6}; --hero-inner-blur: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.heroInnerBlur ?: 8}px;|"
+    th:style="|--bannerOffset: ${theme.config?.style?.bannerStyle?.position == 'top' ? '30vh' : (theme.config?.style?.bannerStyle?.position == 'bottom' ? '0' : '15vh')}; --transparent-wallpaper-opacity: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.wallpaperOpacity ?: 0.8}; --transparent-wallpaper-blur: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.wallpaperBlur ?: 10}px; --transparent-card-alpha: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.cardOpacity ?: 0.6}; --hero-inner-blur: ${theme.config?.style?.displayPanel?.wallpaperDefaults?.heroInnerBlur ?: 8}px; |"
     data-overlayscrollbars-initialize
   >
     <ConfigCarrier />
@@ -660,6 +705,21 @@ const themeSettingScript = `<script type="application/json" id="theme-config" th
           localStorage.removeItem("danmaku");
         }
 
+        // 自定义光标访客覆盖：只切 body 类，CSS 规则挂在 body:not(.cursor-off) 上，
+        // 关掉即整体回滚到浏览器默认光标
+        if (
+          enable &&
+          on(d.visitorCursorStyle) &&
+          d.cursorStyleDefault === "true"
+        ) {
+          body.classList.toggle(
+            "cursor-off",
+            localStorage.getItem("cursorStyle") === "false",
+          );
+        } else {
+          localStorage.removeItem("cursorStyle");
+        }
+
         if (enable && on(d.visitorWallpaperSettings)) {
           var waveDefault = d.waveDefault !== "false";
           var waveStored = localStorage.getItem("bannerWave");
@@ -682,6 +742,8 @@ const themeSettingScript = `<script type="application/json" id="theme-config" th
     <slot />
     <WaveEffect />
     <SakuraEffect />
+    <TabTitle />
+    <CursorEffects />
     <MobileBottomBar />
     <!-- 沉浸阅读的常驻出口：沉浸态下导航栏被隐藏，没有它就只能靠 Esc -->
     <button

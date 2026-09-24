@@ -320,6 +320,31 @@ const {
         </div>
       </div>
 
+      <!-- 副标题首屏文案：解析到这个位置就把第一行填进可见的 span。
+           否则要等 banner 脚本（defer 加载、开局还要再停 500ms）才出现 ——
+           慢网络下副标题会空白一两秒，观感上像是「标题先出来、副标题后出现」。
+           banner-typewriter.ts 会识别这段已渲染的文字，从「第一行已打完」接着往下走，
+           不会清空重打。hidden 状态（沉浸/隐藏横幅文字）下不填，与脚本守卫一致 -->
+      <script is:inline>
+        (function () {
+          var el = document.getElementById("banner-subtitle");
+          var data = document.getElementById("banner-subtitles-data");
+          if (!el || !data) return;
+          var overlay = el.closest("#banner-overlay");
+          if (overlay && overlay.classList.contains("banner-text-hidden"))
+            return;
+          var first = (data.textContent || "")
+            .split(/\r?\n/)
+            .map(function (line) {
+              return line.trim();
+            })
+            .filter(Boolean)[0];
+          if (first && !el.textContent.replace(/\u00A0/g, "").trim()) {
+            el.textContent = first;
+          }
+        })();
+      </script>
+
       <!-- 社交链接行：GitHub 带文字标签（主入口），其余为圆形图标按钮。
            每一项填了才渲染；外层 overlay 是 pointer-events-none，这里要收回
            指针事件，否则按钮点不动 -->

@@ -16,7 +16,7 @@
     "check": "astro check",
     "format": "prettier --write . && pnpm readme:halo",
     "prepare": "husky",
-    "verify": "node scripts/check-identity.mjs"
+    "verify": "node scripts/check-identity.mjs && node scripts/check-template-integrity.mjs"
   },
   "prettier": {
     "plugins": [

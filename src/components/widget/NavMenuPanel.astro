@@ -76,6 +76,7 @@ import SiteLogo from "../SiteLogo.astro";
                   th:if="${#strings.startsWith(menuIcon, 'data:') or #strings.startsWith(menuIcon, 'http')}"
                   th:src="${menuIcon}"
                   alt=""
+                  sizes="2rem"
                 />
                 <span
                   th:if="${#strings.startsWith(menuIcon, '<svg')}"
@@ -107,6 +108,7 @@ import SiteLogo from "../SiteLogo.astro";
                   th:if="${#strings.startsWith(childIcon, 'data:') or #strings.startsWith(childIcon, 'http')}"
                   th:src="${childIcon}"
                   alt=""
+                  sizes="2rem"
                 />
                 <span
                   th:if="${#strings.startsWith(childIcon, '<svg')}"
@@ -154,6 +156,7 @@ import SiteLogo from "../SiteLogo.astro";
                 th:if="${#strings.startsWith(menuIcon, 'data:') or #strings.startsWith(menuIcon, 'http')}"
                 th:src="${menuIcon}"
                 alt=""
+                sizes="2rem"
               />
               <span
                 th:if="${#strings.startsWith(menuIcon, '<svg')}"
@@ -205,6 +208,7 @@ import SiteLogo from "../SiteLogo.astro";
                 th:if="${#strings.startsWith(childIcon, 'data:') or #strings.startsWith(childIcon, 'http')}"
                 th:src="${childIcon}"
                 alt=""
+                sizes="2rem"
               />
               <span
                 th:if="${#strings.startsWith(childIcon, '<svg')}"

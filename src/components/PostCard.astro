@@ -125,6 +125,7 @@ const statIconClass =
     <img
       th:src="|${post.spec.cover}${suffix}|"
       th:alt="${post.spec.title}"
+      sizes="(max-width: 767px) 94vw, min(360px, 28vw)"
       loading="lazy"
       decoding="async"
       class="h-full w-full object-cover"
