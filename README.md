@@ -26,6 +26,7 @@
 **[简体中文](README.md)** | **[English](README.en.md)**
 
 🚀 快速指南：
+[**🖥️在线预览**](https://blog.onlycc.ltd) /
 [**⬇️ 下载最新版**](https://github.com/only1nn/halo-theme-Onlynn/releases) /
 [**🐛 反馈问题**](https://github.com/only1nn/halo-theme-Onlynn/issues) /
 [**💬 参与讨论**](https://github.com/only1nn/halo-theme-Onlynn/discussions)

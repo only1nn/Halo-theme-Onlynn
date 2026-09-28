@@ -27,6 +27,7 @@
 **[简体中文](README.md)** | **[English](README.en.md)**
 
 🚀 Quick links:
+[**🖥️Live Demo**](https://blog.onlycc.ltd) /
 [**⬇️ Download**](https://github.com/only1nn/halo-theme-Onlynn/releases) /
 [**🐛 Report an issue**](https://github.com/only1nn/halo-theme-Onlynn/issues) /
 [**💬 Discussions**](https://github.com/only1nn/halo-theme-Onlynn/discussions)
