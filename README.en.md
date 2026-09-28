@@ -4,11 +4,12 @@
 
 > A card-style blog theme for Halo 2
 >
-> Base styling from [Fuwari](https://github.com/saicaca/fuwari), ported to Halo,
-> with appearance and interaction customisation modelled on
+> Heavily modified from [halo-theme-ethereal](https://github.com/AloneNanNan/halo-theme-ethereal),
+> whose styling originates from [Fuwari](https://github.com/saicaca/fuwari);
+> appearance and interaction customisation modelled on
 > [Firefly](https://github.com/CuteLeaf/Firefly)
 >
-> ![Version](https://img.shields.io/badge/version-1.1.0-blue)
+> ![Version](https://img.shields.io/badge/version-1.2.1-blue)
 > ![Halo](https://img.shields.io/badge/Halo-%3E%3D2.25.0-blue)
 > ![Node.js >= 22.12](https://img.shields.io/badge/node.js-%3E%3D22.12-brightgreen)
 > ![pnpm >= 10](https://img.shields.io/badge/pnpm-%3E%3D10-blue)
@@ -506,13 +507,19 @@ easy to trip. Read `AGENTS.md` before editing templates; the most common traps:
 
 Onlynn stands on the shoulders of several open-source projects:
 
-- [**Fuwari**](https://github.com/saicaca/fuwari) — **the styling base of this project**:
-  the card layout, palette and typographic rhythm all come from it. This theme ports it to
-  Halo, keeping the same "Astro compiles to Thymeleaf" pipeline
-- [**Firefly**](https://github.com/CuteLeaf/Firefly) — the design reference: on top of the
-  Fuwari base, the Hero layout, sakura and code-block styling here follow its aesthetics
+- [**halo-theme-ethereal**](https://github.com/AloneNanNan/halo-theme-ethereal) —
+  **the direct base of this project**: Onlynn is a heavily modified fork of it; the layout
+  skeleton, the "Astro compiles to Thymeleaf" pipeline and many interactions come from it
+  (upstream author 楠南NanNan)
+- [**halo-theme-fuwari**](https://github.com/jiewenhuang/halo-theme-fuwari) — where that
+  base came from: the earlier Halo port of Fuwari (author Jevon)
+- [**Fuwari**](https://github.com/saicaca/fuwari) — **the origin of the whole design
+  language** (the Astro original): the card layout, palette and typographic rhythm （author Saica）
+- [**Firefly**](https://github.com/CuteLeaf/Firefly) — the design reference: the Hero
+  layout, sakura and code-block styling here follow its aesthetics （author XiaYe）
 - [**Halo**](https://halo.run) — the platform itself; the templating system, settings
   framework and plugin ecosystem all rest on it
 
-Distributed under the [MIT license](LICENSE). If you reference or reuse components from
-this project, please credit it.
+Distributed under the [MIT license](LICENSE); the upstream copyright notices above are
+preserved in [LICENSE](LICENSE). If you reference or reuse components from this project,
+please credit it.
