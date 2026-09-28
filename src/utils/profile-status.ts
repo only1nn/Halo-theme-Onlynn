@@ -622,10 +622,20 @@ export function initProfileStatus(): void {
       swup.hooks.on("page:view", syncTooltip);
     }
   };
+  // @swup/astro 不派发 swup:enable，且实例建得比本模块晚 —— 短轮询等它就绪
+  // （约 10s 后放弃；bindSwup 内部有 __profileStatusSwupBound 守卫，重复调用无害）
   if ((window as unknown as { swup?: { hooks?: unknown } }).swup?.hooks) {
     bindSwup();
   } else {
-    document.addEventListener("swup:enable", bindSwup);
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      if ((window as unknown as { swup?: { hooks?: unknown } }).swup?.hooks) {
+        window.clearInterval(timer);
+        bindSwup();
+      } else if (++tries > 200) {
+        window.clearInterval(timer);
+      }
+    }, 50);
   }
 
   // document 级事件委托：badge 跨页面持久，一次绑定终身有效

@@ -1,0 +1,77 @@
+---
+/*
+  站内换页（Swup）时的加载动画。设置项在「增强功能 → 加载动画」：
+  enable / style（八重神子 · 流萤 · 芙宁娜 · 自定义）/ image（仅自定义档）/ text / delay。
+
+  分工：**风格、图片、文案全部服务端渲染** —— 脚本只负责「什么时候显示」。
+  这样即使脚本没跑（或挂掉），也只是一个默认隐藏的空壳，不会出现「半截动画」；
+  三种风格也共用同一份 DOM 与 CSS（style 只改配色变量与哪些颗粒显示）。
+
+  两处白名单兜底：style 值不认识时一律归一成 custom，图片回落内置图、文案回落通用文案键，
+  不会出现「图 404 / 文案显示成 ??loading.xxx??」这种后台填错值就崩的形态。
+*/
+const cfg = "theme.config?.enhance?.loading";
+const styleRaw = `(${cfg}?.style ?: 'yae')`;
+const known = ["yae", "firefly", "furina", "custom"];
+const styleExpr = `(${known
+  .map((s) => `(${styleRaw}) == '${s}' ? '${s}' : `)
+  .join("")}'custom')`;
+const enabledExpr = `\${${cfg}?.enable != false}`;
+const delayExpr = `(${cfg}?.delay ?: 120)`;
+// th:attr 的赋值序列里，右值必须是 ${...} 形式的表达式（写裸表达式会被判为
+// "Could not parse as assignation sequence" —— 这个错误 astro build 看不见，只有真机渲染才报）
+const attrExpr = `data-style=\${${styleExpr}}, data-delay=\${${delayExpr}}`;
+const imgExpr = `\${(${styleExpr}) == 'custom' ? ((${cfg}?.image) ?: #theme.assets('/loading/yae.png')) : #theme.assets('/loading/' + (${styleExpr}) + '.png')}`;
+const textExpr = `\${(${cfg}?.text) ?: #messages.msg('loading.' + (${styleExpr}))}`;
+---
+
+<div
+  id="loading-overlay"
+  class="loading-overlay"
+  hidden
+  aria-live="polite"
+  th:if={enabledExpr}
+  th:attr={attrExpr}
+>
+  <div class="ld-card card-base">
+    {
+      /* 颗粒：三种风格各用其中一组，其余靠 CSS 关掉；--i 负责错峰。
+        作为卡片的子元素存在，靠卡片 overflow:hidden 裁剪 —— 浮层是 fixed 视口级，
+        颗粒若挂在浮层上会散到整个视口 */
+    }
+    <div class="ld-fx" aria-hidden="true">
+      <i class="ld-star" style="--i:0">✦</i>
+      <i class="ld-star" style="--i:1">✦</i>
+      <i class="ld-star" style="--i:2">✦</i>
+      <i class="ld-fire" style="--i:0"></i>
+      <i class="ld-fire" style="--i:1"></i>
+      <i class="ld-fire" style="--i:2"></i>
+      <i class="ld-fire" style="--i:3"></i>
+      <i class="ld-bfly" style="--i:0">🦋</i>
+      <i class="ld-bfly" style="--i:1">🦋</i>
+      <i class="ld-petal" style="--i:0"></i>
+      <i class="ld-petal" style="--i:1"></i>
+      <i class="ld-petal" style="--i:2"></i>
+      <i class="ld-petal" style="--i:3"></i>
+    </div>
+    <div class="ld-runner" aria-hidden="true">
+      <div class="ld-runner-inner">
+        <div class="ld-bob">
+          <img
+            class="ld-img"
+            alt=""
+            width="92"
+            height="92"
+            decoding="async"
+            th:src={imgExpr}
+          />
+        </div>
+      </div>
+    </div>
+    <div class="ld-bar" aria-hidden="true">
+      <i class="ld-bar-fill"></i>
+      <i class="ld-bar-dot"></i>
+    </div>
+    <p class="ld-text" th:text={textExpr}>加载中…</p>
+  </div>
+</div>

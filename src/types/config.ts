@@ -597,12 +597,26 @@ export interface LinksOwnerInfo {
 }
 
 // ========== 增强功能 ==========
-/** 增强功能设置：离屏文案 / 鼠标风格 / 鼠标特效 / 灰色模式（后台未配置的子组可能缺失，均视为可选） */
+/** 增强功能设置：离屏文案 / 鼠标风格 / 鼠标特效 / 灰色模式 / 加载动画（后台未配置的子组可能缺失，均视为可选） */
 export interface Enhance {
   tabTitle?: TabTitle;
   cursor?: Cursor;
   cursorFx?: CursorFx;
   grayMode?: GrayMode;
+  loading?: Loading;
+}
+
+/** 加载动画：站内换页时盖在正文栏上，新内容换入即隐藏 */
+export interface Loading {
+  enable?: boolean;
+  /** yae / firefly / furina / custom（内置图见 public/assets/loading/） */
+  style?: string;
+  /** 自定义档的图片，留空回落到内置图 */
+  image?: string;
+  /** 覆盖默认文案；留空用所选风格的 i18n 文案 */
+  text?: string;
+  /** 点击后延迟多少毫秒再显示（避免极快换页闪一下） */
+  delay?: number;
 }
 
 /** 离屏文案：切到其它标签页时替换标题 */

@@ -14,7 +14,11 @@
   }
 
   &.enable-banner #main-grid {
-    @apply translate-y-(--banner-height-extend);
+    /* 纵向位移用「相对定位 + top」而不是 translate：translate / transform 会让
+       #main-grid 成为 fixed 后代的包含块 —— 内容区里所有第三方 fixed 弹层会改按
+       网格盒子定位（评论插件的验证码弹层实测被居中到整个网格中间，看起来像一张
+       卡住的全页蒙版）。top 同样是长度、同样可插值，但不产生包含块 */
+    @apply relative top-(--banner-height-extend);
   }
 
   &.enable-banner #sidebar-sticky {
@@ -24,4 +28,40 @@
   &.enable-banner #right-sidebar-sticky {
     @apply top-[calc(1rem-var(--banner-height-extend))];
   }
+}
+
+/* #main-grid 的纵向位移改用 top（原因见上面 is-home 的注释），而 Tailwind 的
+   transition 默认属性表里没有 top。这里给一份「默认表 + top」的同层工具类，
+   网格拿它替代 transition —— 跨层覆盖不可靠（utilities 恒优先于 components），
+   同层替换才稳。时长仍由 duration-[var(--dur-banner)] 提供，与改动前一致。 */
+@utility transition-top {
+  transition-property:
+    color,
+    background-color,
+    border-color,
+    outline-color,
+    text-decoration-color,
+    fill,
+    stroke,
+    --tw-gradient-from,
+    --tw-gradient-via,
+    --tw-gradient-to,
+    opacity,
+    box-shadow,
+    transform,
+    translate,
+    scale,
+    rotate,
+    filter,
+    -webkit-backdrop-filter,
+    backdrop-filter,
+    display,
+    content-visibility,
+    overlay,
+    pointer-events,
+    top;
+  transition-timing-function: var(
+    --default-transition-timing-function,
+    cubic-bezier(0.4, 0, 0.2, 1)
+  );
 }

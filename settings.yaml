@@ -3297,6 +3297,63 @@ spec:
               value: ""
               rows: 3
               help: "每行一段，格式 MM/DD~MM/DD，例如 12/13~12/13。留空则长期生效；可跨年，如 12/30~01/02"
+
+        - $formkit: group
+          name: loading
+          label: 加载动画
+          value:
+            enable: true
+            style: yae
+            image: ""
+            text: ""
+            delay: 120
+          children:
+            - $formkit: switch
+              name: enable
+              id: loading_enable
+              label: 启用
+              value: true
+              help: "站内换页（点击文章 / 菜单）时，在正文栏显示一段加载动画 —— 补上点击后到新内容出现之间那段「空着」的观感"
+            - $formkit: select
+              name: style
+              id: loading_style
+              label: 动画风格
+              value: yae
+              options:
+                - value: yae
+                  label: 八重神子（粉紫）
+                - value: firefly
+                  label: 流萤（薄荷绿）
+                - value: furina
+                  label: 芙宁娜（水蓝）
+                - value: custom
+                  label: 自定义图片
+              help: "三套都带飘落粒子 + 进度条与角色滑动；选「自定义图片」时用下方上传的图，配色跟随主题色"
+            - $formkit: attachment
+              name: image
+              if: "$get(loading_style).value === 'custom'"
+              label: 自定义图片
+              accepts:
+                - "image/*"
+              value: ""
+              help: "建议透明 PNG，显示高度约 90px（2 倍图更清晰）；留空则回落到内置的八重神子图"
+            - $formkit: text
+              name: text
+              id: loading_text
+              if: "$get(loading_enable).value"
+              label: 加载文案
+              value: ""
+              help: "留空则用所选风格的默认文案（随站点语言）"
+            - $formkit: number
+              name: delay
+              id: loading_delay
+              if: "$get(loading_enable).value"
+              label: 显示延迟（ms）
+              value: 120
+              min: 0
+              max: 2000
+              step: 20
+              help: "点击后先等这么久再显示，避免极快的换页闪一下；0 = 立刻显示。无论多久都会在新内容换入时隐藏"
     - group: performance
       label: 速度优化
       formSchema:

@@ -538,8 +538,8 @@ html[data-banner-display="transparent"] #banner-gradient {
   }
 
   /* 全屏模式首页：banner 占满整屏，内容区从 100vh 之下开始（不交叠）。
-     top = 100vh − 延伸像素，与 #main-grid 的 translate-y-(--banner-height-extend)
-     抵消后精确落在 100vh，避免延伸像素取整导致的顶部残留露白。
+     top = 100vh − 延伸像素，与 #main-grid 的「下移延伸像素」（相对定位的 top，
+     见 is-home 工具类）抵消后精确落在 100vh，避免延伸像素取整导致的顶部残留露白。
      +--banner-home-content-gap：首页内容区顶部留出的页面背景间距（原
      #main-grid padding-top）。折进 panel top 而非 padding——该 top 在首页↔
      其他页切换时由 home-switch 过渡（html.home-switch #main-panel-wrapper
@@ -635,12 +635,20 @@ html[data-banner-display="transparent"] #banner-gradient {
     transition: none;
   }
 
-  /* 显式 0 长度基值：is-home 切换时 translate 在 length↔length 间过渡。
+  /* 显式 0 长度基值：is-home 切换时位移在 length↔length 间过渡。
      translate: none 与长度不可插值（CSS Transforms 2），会导致网格瞬移。
-     wave 用 transform、网格/banner 用 translate，属性不同但同为 --dur-banner、
+     wave 用 transform、banner 用 translate，属性不同但同为 --dur-banner、
      同缓动、同帧切换（body.is-home），天然同步滑动，
-     无需任何 is-changing 覆盖（wave 保持自然过渡，不闪现） */
-  .enable-banner #main-grid,
+     无需任何 is-changing 覆盖（wave 保持自然过渡，不闪现）。
+     网格改用「相对定位 + top」而不是 translate：translate 会让 #main-grid 成为
+     fixed 后代的包含块 —— 内容区里的第三方 fixed 弹层（如评论插件的验证码弹层）
+     会改按整个网格居中、跑到页面中间，看着像一张卡住的全页蒙版。top 同为长度、
+     同样能插值，但不产生包含块，观感与改动前一致 */
+  .enable-banner #main-grid {
+    position: relative;
+    top: 0;
+  }
+
   .enable-banner #banner-wrapper {
     translate: 0 0;
   }
@@ -780,8 +788,9 @@ html[data-banner-display="transparent"] #banner-gradient {
     opacity: 0;
   }
 
-  /* 壁纸模式切换过渡：panel top / grid min-height·translate 随模式变化平滑过渡
-     （复用 --dur-banner）。由 applyBannerDisplay 临时加 html.banner-mode-transitioning
+  /* 壁纸模式切换过渡：panel top / grid min-height·top 随模式变化平滑过渡
+     （复用 --dur-banner；网格的纵向位移是 top，见上方 .enable-banner #main-grid
+     的注释）。由 applyBannerDisplay 临时加 html.banner-mode-transitioning
      启用，过渡结束后移除恢复默认 */
   html.banner-mode-transitioning #main-panel-wrapper,
   html.banner-mode-transitioning #main-grid {
@@ -789,8 +798,6 @@ html[data-banner-display="transparent"] #banner-gradient {
       top var(--dur-banner, 700ms)
         var(--default-transition-timing-function, cubic-bezier(0.4, 0, 0.2, 1)),
       min-height var(--dur-banner, 700ms)
-        var(--default-transition-timing-function, cubic-bezier(0.4, 0, 0.2, 1)),
-      translate var(--dur-banner, 700ms)
         var(--default-transition-timing-function, cubic-bezier(0.4, 0, 0.2, 1));
   }
 

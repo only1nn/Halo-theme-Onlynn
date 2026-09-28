@@ -3,6 +3,7 @@ import BackToTop from "../components/control/BackToTop.astro";
 import CategoryBar from "../components/control/CategoryBar.astro";
 import Footer from "../components/Footer.astro";
 import ImageWrapper from "../components/misc/ImageWrapper.astro";
+import LoadingOverlay from "../components/LoadingOverlay.astro";
 import Navbar from "../components/Navbar.astro";
 import RightSideBar from "../components/widget/RightSideBar.astro";
 import SideBar from "../components/widget/SideBar.astro";
@@ -488,7 +489,7 @@ const {
     >
       <div
         id="main-grid"
-        class="pointer-events-auto left-0 right-0 mx-auto grid w-full grid-cols-[1fr] grid-rows-[auto] gap-4 px-0 transition duration-[var(--dur-banner,700ms)] md:grid-cols-[17.5rem_1fr] md:grid-rows-[auto_1fr_auto] md:px-4"
+        class="pointer-events-auto left-0 right-0 mx-auto grid w-full grid-cols-[1fr] grid-rows-[auto] gap-4 px-0 transition-top duration-[var(--dur-banner,700ms)] md:grid-cols-[17.5rem_1fr] md:grid-rows-[auto_1fr_auto] md:px-4"
         th:classappend="${theme.config?.layout?.pageLayout?.layoutMode == 'two-column'
           ? 'layout-two-column'
           : 'layout-three-column xl:grid-cols-[17.5rem_1fr_17.5rem]'}"
@@ -524,14 +525,21 @@ const {
           >
             <CategoryBar />
           </div>
-          <main id="swup-container" class="transition-swup-fade min-w-0">
-            <div id="content-wrapper" class="onload-animation">
-              <slot />
-              <div class="footer onload-animation col-span-2 hidden lg:block">
-                <Footer />
+          {
+            /* #swup-container 是 Swup 容器、换页会被整块替换，加载动画（fixed 视口级）
+              必须放在它外面才不会随换页消失；min-w-0 维持原来的收缩约束 */
+          }
+          <div class="relative min-w-0">
+            <main id="swup-container" class="transition-swup-fade min-w-0">
+              <div id="content-wrapper" class="onload-animation">
+                <slot />
+                <div class="footer onload-animation col-span-2 hidden lg:block">
+                  <Footer />
+                </div>
               </div>
-            </div>
-          </main>
+            </main>
+            <LoadingOverlay />
+          </div>
         </div>
 
         <!-- 左侧栏 - 移动端第二项，平板端用 grid 放到左侧；

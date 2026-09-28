@@ -106,9 +106,15 @@ export default defineConfig({
           samePage: true,
         },
       }),
-      cache: false, // 禁用缓存，避免友链页面内容不完整
-      // I25：删除 preload——cache:false 下 @swup/astro 强制禁用 preload（死配置），
-      // 保留会误导未来误启用（每 hover = 整页 HTML 拉取，成为带宽放大面）
+      // 打开页面缓存：第二次访问同一路径（含浏览器前进/后退）不再取页，
+      // 换入是瞬时的。当初因「友链页从缓存出来不完整」关掉过，v1.2.1 查清了
+      // 根因（内容区里由外部 bundle 脚本渲染的部分不会随缓存内容重跑）并修掉，
+      // 见 src/scripts/assets/links.bundle.js 与 app.ts 的 page:view 重放。
+      cache: true,
+      // 预取只在**悬停**时做（visible 保持关闭：可见即预取会让整屏卡片一起拉页面，
+      // 是真正的带宽放大面）。悬停后命中缓存，点击即换入；
+      // 插件自身在 saveData / 2G 网络下跳过预取，同一路径也只取一次。
+      preload: true,
       accessibility: true,
       updateHead: true,
       updateBodyClass: false,

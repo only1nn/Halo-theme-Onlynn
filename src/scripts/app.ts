@@ -17,6 +17,7 @@ import "../styles/link-apply-modal.css";
 import "../styles/profile-status.css";
 import "../styles/code-block.css";
 import "../styles/danmaku.css";
+import "../styles/loading.css";
 import "../styles/plugin-vars.css";
 
 // ── 第三方 ──
@@ -492,6 +493,120 @@ function setupSwup() {
       setTimeout(releaseTocNotReady, 2000);
     }
   });
+
+  // 站内换页的加载动画（设置关掉时组件不渲染，这里取到 null 直接跳过）
+  const loadingOverlay = document.getElementById("loading-overlay");
+  if (loadingOverlay) setupLoadingOverlay(loadingOverlay);
+}
+
+// ── 站内换页的加载动画：只管「什么时候显示」 ──
+// 风格 / 图片 / 文案都是服务端渲染好的（见 components/LoadingOverlay.astro），
+// 这里只开关。四条纪律：
+//  1. 隐藏路径必须齐全 —— 正常换页 content:replace、取页失败或中断 visit:abort、
+//     收尾 visit:end 各挂一道，**再加最大显示时长兜底**：一言那次踩过「加载态卡住
+//     不消失」，任何加载态都不许留一个永不退场的遮罩；
+//  2. 不抢戏 —— 同页锚点与浏览器前进/后退不显示（内容本来就在眼前）；
+//  3. 延迟严格按后台设置走，**0 = 同步立刻显示**（不走 setTimeout：微任务里完成的
+//     换页可能在定时器回调前就 content:replace，0 延迟反而永远不显示）；
+//  4. 配置活同步 —— 动画节点在 Swup 容器外，data-* 是**最初整页加载**时渲染的，
+//     后台改设置后站内换页永远读到旧值（「后台改了没反应」的又一形态）。每次换页
+//     从取回的新页面 HTML 里把延迟 / 风格 / 文案 / 图 / 开关同步过来，下一次换页
+//     即生效，无需 F5。
+const LOADING_MAX_MS = 8000;
+
+function setupLoadingOverlay(overlay: HTMLElement) {
+  let current = overlay;
+  // 后台把开关关了再开：以「最近一次取回的页面里有没有动画节点」为准
+  let available = true;
+  let showTimer = 0;
+  let capTimer = 0;
+
+  const hide = () => {
+    window.clearTimeout(showTimer);
+    window.clearTimeout(capTimer);
+    current.classList.remove("is-visible");
+    current.hidden = true;
+  };
+
+  const show = () => {
+    current.hidden = false;
+    // 读一次布局再上类：保证透明度过渡从初始态开始。
+    // 不用 rAF —— 标签页在后台等场景它不推进，会让动画停在透明态
+    void current.offsetWidth;
+    current.classList.add("is-visible");
+    capTimer = window.setTimeout(hide, LOADING_MAX_MS);
+  };
+
+  const readDelay = () => {
+    const n = Number(current.dataset.delay);
+    return Number.isFinite(n) ? Math.max(0, n) : 120;
+  };
+
+  // Thymeleaf th:text 的转义是 & < > " ' 五种，反向解码足够
+  const decodeEntities = (s: string) =>
+    s
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+
+  // 从取回的新页面 HTML 里同步配置（与 LoadingOverlay.astro 的渲染形态对应）。
+  // 只在值变化时写回：img.src 变更会触发重新下载，别每次换页都折腾它
+  const syncFromHtml = (html?: string) => {
+    if (!html) return;
+    const openTag = html.match(/<div id="loading-overlay"([^>]*)>/);
+    if (!openTag) {
+      available = false;
+      return;
+    }
+    available = true;
+    const attrs = openTag[1];
+    const delay = attrs.match(/data-delay="(\d+)"/)?.[1];
+    const style = attrs.match(/data-style="([a-z-]+)"/)?.[1];
+    if (delay !== undefined && delay !== current.dataset.delay)
+      current.dataset.delay = delay;
+    if (style !== undefined && style !== current.dataset.style)
+      current.dataset.style = style;
+    const src = html
+      .match(/<img[^>]*class="ld-img"[^>]*>/)?.[0]
+      ?.match(/src="([^"]*)"/)?.[1];
+    if (src) {
+      const img = current.querySelector(".ld-img");
+      if (img && img.getAttribute("src") !== src) img.setAttribute("src", src);
+    }
+    const text = html.match(/class="ld-text"[^>]*>([\s\S]*?)<\/p>/)?.[1];
+    if (text !== undefined) {
+      const el = current.querySelector(".ld-text");
+      const decoded = decodeEntities(text);
+      if (el && el.textContent !== decoded) el.textContent = decoded;
+    }
+  };
+
+  window.swup.hooks.on(
+    "visit:start",
+    (visit: { to?: { hash?: string }; history?: { popstate?: boolean } }) => {
+      hide();
+      if (visit?.history?.popstate || visit?.to?.hash || !available) return;
+      const delay = readDelay();
+      if (delay === 0) {
+        show();
+      } else {
+        showTimer = window.setTimeout(show, delay);
+      }
+    },
+  );
+  // 新内容换入即隐藏：换入动画自己会淡入，遮罩多留只会挡住内容。
+  // 同时从取回的页面同步配置（args.page.html 由 Swup 传入，缓存命中同样有）
+  window.swup.hooks.on(
+    "content:replace",
+    (visit: unknown, args: { page?: { html?: string } }) => {
+      hide();
+      syncFromHtml(args?.page?.html);
+    },
+  );
+  window.swup.hooks.on("visit:abort", hide);
+  window.swup.hooks.on("visit:end", hide);
 }
 
 // 目录悬浮按钮显隐（I29）：只要页面没有可见目录（两栏悬浮目录 #toc-wrapper /
@@ -568,11 +683,28 @@ init();
 void initContentLightbox();
 void initPhotosGallery();
 
-if (window?.swup?.hooks) {
-  setupSwup();
-} else {
-  document.addEventListener("swup:enable", setupSwup);
-}
+// @swup/astro 的实例是「load 之后空闲时」才创建的，本模块执行时它往往还不存在；
+// 而它只派发 astro:before-swap / astro:after-swap / astro:page-load 三个事件，
+// **并不派发 swup:enable** —— 原先挂 `document.addEventListener("swup:enable", …)`
+// 是一段死代码，结果是：实例建得晚的加载里，主题所有 Swup 钩子都绑不上
+// （换页保留音乐播放器、目录门控、撑高块回收、加载动画等一起失效）。
+// 改成短轮询等实例就绪；拿到后就绑一次（setupSwup 内部有重入守卫）。
+(function setupSwupWhenReady() {
+  if (window?.swup?.hooks) {
+    setupSwup();
+    return;
+  }
+  let tries = 0;
+  const timer = window.setInterval(() => {
+    if (window?.swup?.hooks) {
+      window.clearInterval(timer);
+      setupSwup();
+    } else if (++tries > 200) {
+      // 约 10s 仍未就绪（脚本被拦等）：放弃，页面照常可用，只是没有换页钩子
+      window.clearInterval(timer);
+    }
+  }, 50);
+})();
 
 scrollFunction();
 initExternalLinkRedirect();

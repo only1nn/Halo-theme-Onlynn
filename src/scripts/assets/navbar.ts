@@ -222,7 +222,9 @@ if (!window.__navbarPanelToggleBound) {
     }
   });
 
-  // 换页后刷新抽屉高亮并收起抽屉：Swup 初始化完成后绑定（与 app.ts 同一模式）
+  // 换页后刷新抽屉高亮并收起抽屉。
+  // 注意：@swup/astro 不派发 swup:enable（实例也在本脚本执行之后才建），
+  // 所以不能靠事件挂载 —— 短轮询等实例就绪（约 10s 后放弃）
   function bindSwupHooks() {
     if (!window.swup || !window.swup.hooks) return;
     window.swup.hooks.on("page:view", function () {
@@ -232,11 +234,21 @@ if (!window.__navbarPanelToggleBound) {
       }
     });
   }
-  if (window.swup && window.swup.hooks) {
-    bindSwupHooks();
-  } else {
-    document.addEventListener("swup:enable", bindSwupHooks);
+
+  function whenSwupReady() {
+    if (window.swup && window.swup.hooks) return bindSwupHooks();
+    var tries = 0;
+    var timer = window.setInterval(function () {
+      if (window.swup && window.swup.hooks) {
+        window.clearInterval(timer);
+        bindSwupHooks();
+      } else if (++tries > 200) {
+        window.clearInterval(timer);
+      }
+    }, 50);
   }
+
+  whenSwupReady();
 }
 
 // 桌面导航在触屏设备上的子菜单展开（与移动/平板抽屉菜单无关）。
