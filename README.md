@@ -8,7 +8,7 @@
 > 样式语言源自 [Fuwari](https://github.com/saicaca/fuwari)；
 > 按 [Firefly](https://github.com/CuteLeaf/Firefly) 的美学补齐外观与交互定制能力
 >
-> ![Version](https://img.shields.io/badge/version-1.2.1-blue)
+> ![Version](https://img.shields.io/badge/version-1.2.2-blue)
 > ![Halo](https://img.shields.io/badge/Halo-%3E%3D2.25.0-blue)
 > ![Node.js >= 22.12](https://img.shields.io/badge/node.js-%3E%3D22.12-brightgreen)
 > ![pnpm >= 10](https://img.shields.io/badge/pnpm-%3E%3D10-blue)
