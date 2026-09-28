@@ -369,9 +369,61 @@ function setupSwup() {
     document.body.appendChild(widget); // 脱离待替换容器但仍在文档内
     parkedMusicWidget = widget;
   });
-  window.swup.hooks.on("content:replace", restoreMusicWidget);
+  // 放回时机必须是 page:view（新内容已就位并派发）而不是 content:replace ——
+  // Swup 的钩子链里 replaceContent 是 content:replace 的默认处理器，注册的
+  // handler 在它**之前**执行：那时 DOM 还是旧的，放回去会随旧容器被整体替换丢弃
+  // （页脚组件实测就这么丢的）。暂存节点挂在 <body> 下仍在文档内，动画/音频不断
+  window.swup.hooks.on("page:view", restoreMusicWidget);
   // 导航中止时 content:replace 不触发，兜底还原，避免播放器卡在隐藏的游离状态
   window.swup.hooks.on("visit:end", restoreMusicWidget);
+  // 换页保留页脚的「自定义链接」整块（后台配置的自定义 HTML，Footer.astro 里
+  // data-footer-custom 标记的容器，按 desktop / mobile 配对）。背景：这类配置里
+  // 常见第三方徽章脚本（如三年之约证书预览），脚本顶层是 const 声明 —— 同一个
+  // 全局作用域里被 SwupScriptsPlugin 重跑必然抛 SyntaxError（解析期即死，脚本
+  // 自己的 ID 守卫都跑不到），换页后徽章随之消失（站长真机控制台实录）；即便
+  // 不炸，重跑还会重复请求它的 JSONP 接口、往 body 叠加同 ID 预览层。三重防护：
+  //  1. 渲染时给用户 HTML 里的 <script> 注入 data-swup-ignore-script，Swup 换页
+  //     彻底跳过它们（重跑路径整个不存在）；
+  //  2. 换页前把非空整块搬出容器暂存到 <body>，page:view（新内容就位后）原位放回
+  //     —— 徽章与预览层跨换页存活，脚本整个会话只真正执行一次；
+  //  3. 放回必须在 page:view：content:replace 阶段 DOM 还是旧的，放回会随旧容器
+  //     被 replaceContent 整体丢弃（页脚组件实测就这么丢的）。
+  const FOOTER_CUSTOM_SELECTOR = "[data-footer-custom]";
+  let parkedFooterCustoms: HTMLElement[] = [];
+  const restoreFooterCustoms = () => {
+    const blocks = parkedFooterCustoms;
+    parkedFooterCustoms = [];
+    blocks.forEach((block) => {
+      const variant = block.dataset.footerCustom;
+      const slot = document.querySelector(
+        `${FOOTER_CUSTOM_SELECTOR}[data-footer-custom="${variant}"]`,
+      );
+      if (slot) {
+        slot.replaceWith(block);
+        block.style.removeProperty("visibility");
+        block.style.removeProperty("position");
+        block.style.removeProperty("top");
+      } else {
+        block.remove();
+      }
+    });
+  };
+  window.swup.hooks.before("content:replace", () => {
+    restoreFooterCustoms(); // 上一次暂存未归还时先归还（连续快速导航）
+    document
+      .querySelectorAll<HTMLElement>(FOOTER_CUSTOM_SELECTOR)
+      .forEach((block) => {
+        // 空块不搬：某些状态下块里只剩被忽略的脚本壳，换入新页面后不会重跑
+        if (!block.innerHTML.trim()) return;
+        block.style.visibility = "hidden"; // 不可见但仍在渲染
+        block.style.position = "absolute";
+        block.style.top = "-9999px";
+        document.body.appendChild(block);
+        parkedFooterCustoms.push(block);
+      });
+  });
+  window.swup.hooks.on("page:view", restoreFooterCustoms);
+  window.swup.hooks.on("visit:end", restoreFooterCustoms);
   window.swup.hooks.on("content:replace", () => {
     const rightToc = document.querySelector(
       "#right-sidebar table-of-contents",

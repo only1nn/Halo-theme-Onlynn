@@ -2,6 +2,21 @@
 import FooterFriendLinks from "./FooterFriendLinks.astro";
 import FooterLinkColumns from "./FooterLinkColumns.astro";
 
+// 桌面 / 移动两份实例由 MainGridLayout 分别传入，用作「换页保留页脚自定义块」的配对键
+// （app.ts 按这个标记搬出/放回，见 data-footer-custom）
+interface Props {
+  variant?: "desktop" | "mobile";
+}
+const { variant = "desktop" } = Astro.props;
+
+// 给用户 HTML 里的 <script> 注入 data-swup-ignore-script（Swup 换页跳过的标记）。
+// 三个硬约束：① SpEL 字符串里的 <script 用 '<scr'+'ipt' 拼接，产物不出现该字面量
+// （构建期标签配平会误判）；② 表达式必须单行 —— Thymeleaf 属性值跨行会
+// "Could not parse as expression"（真机渲染才报，astro build 看不见）；
+// ③ 注入的属性不带值（无双引号）—— 双引号会截断 th:utext 的 HTML 属性值
+const ignoreScriptExpr =
+  "#strings.replace(link.html, '<scr' + 'ipt', '<scr' + 'ipt data-swup-ignore-script')";
+
 const currentYear = new Date().getFullYear();
 ---
 
@@ -86,10 +101,17 @@ const currentYear = new Date().getFullYear();
       >
     </span>
   </div>
-  <!-- 自定义页脚链接 -->
+  <!-- 自定义页脚链接。
+       data-footer-custom：app.ts「换页保留」的搬移锚点（按 desktop / mobile 配对）。
+       用户 HTML 里的 <script>（如第三方证书徽章）必须注入 data-swup-ignore-script：
+       这类脚本的顶层 const 在同一全局作用域里只能声明一次 —— 换页被 SwupScriptsPlugin
+       重跑必然抛 SyntaxError（解析期即死，脚本自己的 ID 守卫都跑不到），徽章随之消失；
+       加了标记后 Swup 换页彻底跳过它们，脚本整个会话只执行一次，配合整块搬移存活。
+       模板里用 '<scr'+'ipt' 拼接，避免产物出现 <script 字面量（构建期标签配平会误判） -->
   <div
-    th:if="${theme.config?.footer?.customLinks != null && not #lists.isEmpty(theme.config?.footer?.customLinks?.items)}"
+    th:if="${theme.config?.footer?.customLinks != null and not #lists.isEmpty(theme.config?.footer?.customLinks?.items)}"
     class="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1"
+    data-footer-custom={variant}
   >
     <span
       th:each="link, stat : ${theme.config?.footer?.customLinks?.items}"
@@ -98,7 +120,7 @@ const currentYear = new Date().getFullYear();
       <span
         th:if="${not #strings.isEmpty(link.html)}"
         th:remove="tag"
-        th:utext="${link.html}"></span>
+        th:utext={`\${${ignoreScriptExpr}}`}></span>
       <span th:unless="${not #strings.isEmpty(link.html)}" th:remove="tag">
         <span th:if="${not stat.first}"> / </span>
         <a
