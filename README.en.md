@@ -4,8 +4,7 @@
 
 > A card-style blog theme for Halo 2
 >
-> Heavily modified from [halo-theme-ethereal](https://github.com/AloneNanNan/halo-theme-ethereal),
-> whose styling originates from [Fuwari](https://github.com/saicaca/fuwari);
+> Heavily modified from [Fuwari](https://github.com/saicaca/fuwari) ，
 > appearance and interaction customisation modelled on
 > [Firefly](https://github.com/CuteLeaf/Firefly)
 >

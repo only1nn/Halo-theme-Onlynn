@@ -4,8 +4,7 @@
 
 > 一款卡片式的 Halo 2 博客主题
 >
-> 基于 [halo-theme-ethereal](https://github.com/AloneNanNan/halo-theme-ethereal) 魔改，
-> 样式语言源自 [Fuwari](https://github.com/saicaca/fuwari)；
+> 基于 [Fuwari](https://github.com/saicaca/fuwari) 魔改，
 > 按 [Firefly](https://github.com/CuteLeaf/Firefly) 的美学补齐外观与交互定制能力
 >
 > ![Version](https://img.shields.io/badge/version-1.2.2-blue)
@@ -415,10 +414,10 @@ pnpm build     # 产出 dist/onlynn-<版本>.zip
 
 Onlynn 站在多个开源项目的肩上：
 
-- [**halo-theme-ethereal**](https://github.com/AloneNanNan/halo-theme-ethereal) —
-  **本项目的直接基座**：Onlynn 是在它基础上魔改而来，布局骨架、的模板链路与大量交互能力都承接自它（上游作者 楠南NanNan）
 - [**halo-theme-fuwari**](https://github.com/jiewenhuang/halo-theme-fuwari) —
-  上述基座的来源：把 Fuwari 移植到 Halo 的先行实现（作者 Jevon）
+  **本项目的直接基座**：把 Fuwari 移植到 Halo 的先行实现,Onlynn 是在它基础上魔改而来，布局骨架、的模板链路与大量交互能力都承接自它（作者 Jevon）
+- [**halo-theme-ethereal**](https://github.com/AloneNanNan/halo-theme-ethereal) —
+  **本项目的借鉴**：（上游作者 楠南NanNan）
 - [**Fuwari**](https://github.com/saicaca/fuwari) — **整套设计语言的源头**（Astro 原作）：
   卡片式版面、配色与排版节奏都源自它（作者 Saica）
 - [**Firefly**](https://github.com/CuteLeaf/Firefly) — 外观与交互定制的参照来源，
