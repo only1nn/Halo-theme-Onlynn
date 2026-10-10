@@ -7,6 +7,19 @@ interface Props {
 }
 
 const className = Astro.props.class;
+
+/* 数据小项：**默认无底色无边框**（12 项都套方框太挤），悬浮时才浮出方糖
+   （底色 + 细描边 + 一点点阴影 + 轻微上浮）。border-transparent 常驻是为了
+   悬浮时只换颜色、不引起 1px 跳动。底色走 --btn-regular-bg（跟随色相，深浅色
+   各一套；透明壁纸模式下它保持纯色，悬浮块不会被壁纸糊掉） */
+const cellClass =
+  "flex items-center gap-2 rounded-xl border border-transparent px-2 py-1 transition hover:-translate-y-0.5 hover:border-(--line-divider) hover:bg-(--btn-regular-bg) hover:shadow-sm";
+const cellLabelClass = "text-[10px] text-neutral-400 dark:text-neutral-500";
+const cellValueClass =
+  "truncate text-xs font-medium text-neutral-700 dark:text-neutral-200";
+/* 12 项的图标各按语义配色（不是清一色主题色）：风/雨系冷蓝、冷热系红蓝、
+   日系暖黄、空气质量绿 —— 信息来源靠颜色区分，比清一色更好扫读 */
+const cellIconClass = "shrink-0 text-base";
 ---
 
 <WidgetLayout
@@ -15,335 +28,771 @@ const className = Astro.props.class;
   id="weather"
   class={className}
 >
-  {/* 隐藏的图标元素，供 Tailwind 构建时检测生成 CSS */}
-  <div class="hidden">
-    <span class="icon-[mdi--loading]"></span>
-    <span class="icon-[mdi--weather-sunny]"></span>
-    <span class="icon-[mdi--weather-cloudy]"></span>
-    <span class="icon-[mdi--weather-cloudy-alert]"></span>
-    <span class="icon-[mdi--weather-rainy]"></span>
-    <span class="icon-[mdi--weather-pouring]"></span>
-    <span class="icon-[mdi--weather-lightning-rainy]"></span>
-    <span class="icon-[mdi--weather-snowy]"></span>
-    <span class="icon-[mdi--weather-snowy-heavy]"></span>
-    <span class="icon-[mdi--weather-snowy-rainy]"></span>
-    <span class="icon-[mdi--weather-fog]"></span>
-    <span class="icon-[mdi--weather-dust]"></span>
-    <span class="icon-[mdi--weather-night]"></span>
-    <span class="icon-[mdi--weather-night-partly-cloudy]"></span>
-    <span class="icon-[mdi--map-marker]"></span>
-    <span class="icon-[mdi--cloud-off-outline]"></span>
-    <span class="icon-[mdi--key-variant]"></span>
+  {
+    /* 供 Tailwind 构建期生成 CSS：大天气图标是 JS 按天气码拼类名的，插件只认
+       源码里出现过的字面量，故把 20 个映射到的圆角变体在此列全（改映射要同步这里） */
+  }
+  <div class="hidden" aria-hidden="true">
+    <span class="icon-[material-symbols--sunny-rounded]"></span>
+    <span class="icon-[material-symbols--nightlight-rounded]"></span>
+    <span class="icon-[material-symbols--partly-cloudy-day-rounded]"></span>
+    <span class="icon-[material-symbols--partly-cloudy-night-rounded]"></span>
+    <span class="icon-[material-symbols--cloud-rounded]"></span>
+    <span class="icon-[material-symbols--rainy-light-rounded]"></span>
+    <span class="icon-[material-symbols--rainy-rounded]"></span>
+    <span class="icon-[material-symbols--rainy-heavy-rounded]"></span>
+    <span class="icon-[material-symbols--thunderstorm-rounded]"></span>
+    <span class="icon-[material-symbols--weather-hail-rounded]"></span>
+    <span class="icon-[material-symbols--rainy-snow-rounded]"></span>
+    <span class="icon-[material-symbols--weather-snowy-rounded]"></span>
+    <span class="icon-[material-symbols--snowing-heavy-rounded]"></span>
+    <span class="icon-[material-symbols--foggy-rounded]"></span>
+    <span class="icon-[material-symbols--dehaze-rounded]"></span>
+    <span class="icon-[material-symbols--grain-rounded]"></span>
+    <span class="icon-[material-symbols--storm-rounded]"></span>
+    <span class="icon-[material-symbols--weather-mix-rounded]"></span>
+    <span class="icon-[material-symbols--local-fire-department-rounded]"></span>
+    <span class="icon-[material-symbols--severe-cold-rounded]"></span>
   </div>
 
-  <div id="weather-content" class="px-3 py-1">
-    <div
-      class="flex items-center justify-center gap-2 text-neutral-400 text-sm"
-    >
-      <span class="icon-[mdi--loading] animate-spin text-base"></span>
-      <span th:text="#{widget.weather.loading}">加载中...</span>
+  {
+    /* 每实例的配置直接由小组件条目注入本节点：左右侧栏各放一个天气组件时互不串号。
+      data-weather-init 同时是「本节点已注册」的标记 */
+  }
+  <div
+    id="weather-content"
+    class="px-2 pb-1"
+    th:attr="data-weather-init=${true},
+      data-city=${widget.city ?: ''},
+      data-adcode=${widget.adcode ?: ''},
+      data-extended=${widget.extended != false},
+      data-key=${widget.tencent_key ?: ''},
+      data-fallback-adcode=${widget.default_city ?: ''}"
+  >
+    {/* 加载态：默认可见，JS 起来前不会白屏 */}
+    <div data-weather-loading>
+      <div
+        class="flex items-center justify-center gap-2 py-4 text-sm text-neutral-400"
+      >
+        <span
+          class="icon-[material-symbols--progress-activity] animate-spin text-base"
+        ></span>
+        <span th:text="#{widget.weather.loading}">加载中...</span>
+      </div>
+    </div>
+
+    {/* 错误态：附重试按钮（清掉本实例缓存后重取） */}
+    <div data-weather-error class="hidden">
+      <div
+        class="flex flex-col items-center justify-center gap-2 py-3 text-sm text-neutral-400"
+      >
+        <div class="flex items-center gap-1.5">
+          <span class="icon-[material-symbols--cloud-off] text-base"></span>
+          <span data-w-error-msg th:text="#{widget.weather.error}"
+            >天气加载失败</span
+          >
+        </div>
+        <button
+          type="button"
+          data-weather-retry
+          class="btn-plain flex items-center gap-1 rounded-lg px-3 py-1 text-xs text-(--primary)"
+        >
+          <span class="icon-[material-symbols--refresh] text-sm"></span>
+          <span th:text="#{widget.weather.retry}">重试</span>
+        </button>
+      </div>
+    </div>
+
+    {
+      /* 内容态：数据由 JS 写入 data-w-* 节点，结构全部服务端渲染（Tailwind 类才扫得到）。
+        收起 / 展开由下面的胶囊按钮切换 [data-weather-extended] 的 hidden —— 收起态
+        只渲染主信息、高度自适应，不做固定高度裁剪（裁剪差一像素就会漏出半行网格） */
+    }
+    <div data-weather-content class="hidden">
+      <div class="flex flex-col gap-2.5">
+        {
+          /* 定位 + 城市 + 更新时间。
+            这里不给城市设 truncate：时间那格最长时是「更新 2026-10-10 16:25:08」，
+            会把城市挤成「北京城区 ·…」，定位信息反而看不全。现在时间压成
+            「🕐 16:25」的紧凑小胶囊（完整时间进 title，悬浮出原生气泡），
+            城市拿到整行宽度、名字过长就换行，再也不会被截断 */
+        }
+        <div class="flex items-start gap-2">
+          <span
+            class="icon-[material-symbols--location-on] mt-0.5 shrink-0 text-sm text-(--primary)"
+          ></span>
+          <span
+            data-w-city
+            class="min-w-0 flex-1 text-sm font-medium leading-snug text-neutral-700 dark:text-neutral-300"
+            >--</span
+          >
+          <span
+            data-w-time
+            class="mt-0.5 flex shrink-0 items-center gap-0.5 text-[10px] text-neutral-400"
+            th:title="#{widget.weather.updated}"
+          >
+            <span class="icon-[material-symbols--schedule] text-xs"></span>
+            <span data-w-report-time>--</span>
+          </span>
+        </div>
+
+        {/* 主信息：随天气变色的大图标 + 温度 + 天气描述 */}
+        <div class="flex items-center gap-2">
+          <span
+            data-w-icon
+            class="icon-[material-symbols--cloud-rounded] shrink-0 text-[2.6rem] text-slate-400"
+          ></span>
+          <span
+            class="text-3xl font-bold leading-none text-neutral-900 dark:text-neutral-100"
+            ><span data-w-temp>--</span><span class="text-base font-normal"
+              >°C</span
+            ></span
+          >
+          <span
+            data-w-weather
+            class="self-end pb-0.5 text-sm font-medium text-neutral-500 dark:text-neutral-400"
+            >--</span
+          >
+        </div>
+
+        {
+          /* 今日高低温：单独一行、字号放大（原来挤在右侧小字里），暖/冷分色。
+            数据源给不出高低温时（腾讯 Key 模式的 future 请求失败）整行隐藏 */
+        }
+        <div
+          data-highlow
+          class="flex items-center justify-center gap-2 text-sm"
+        >
+          <span class="text-rose-500"
+            ><span th:text="#{widget.weather.highTemp}">高温</span>
+            <span data-w-temp-max class="font-semibold">--</span>°C</span
+          >
+          <span class="text-neutral-300 dark:text-neutral-600">/</span>
+          <span class="text-sky-500"
+            ><span th:text="#{widget.weather.lowTemp}">低温</span>
+            <span data-w-temp-min class="font-semibold">--</span>°C</span
+          >
+        </div>
+
+        {
+          /* 展开区：收起时整体不渲染（hidden），由底部胶囊按钮切换。
+            后台关掉「扩展信息」时按钮一起隐藏，没有可展开的东西 */
+        }
+        <div data-weather-extended class="hidden">
+          <div class="flex flex-col gap-2">
+            {/* 12 个数据小项：2 列 × 6 行，默认无框，悬浮浮出方糖 */}
+            <div class="grid grid-cols-2 gap-x-3 gap-y-1.5">
+              <div class={cellClass} data-cell>
+                <span
+                  class={`icon-[material-symbols--air] ${cellIconClass} text-sky-500`}
+                ></span>
+                <div class="flex min-w-0 flex-col leading-tight">
+                  <span class={cellLabelClass} th:text="#{widget.weather.wind}"
+                    >风</span
+                  >
+                  <span data-w-wind class={cellValueClass}>--</span>
+                </div>
+              </div>
+              <div class={cellClass} data-cell>
+                <span
+                  class={`icon-[material-symbols--visibility] ${cellIconClass} text-cyan-500`}
+                ></span>
+                <div class="flex min-w-0 flex-col leading-tight">
+                  <span
+                    class={cellLabelClass}
+                    th:text="#{widget.weather.visibility}">能见度</span
+                  >
+                  <span data-w-visibility class={cellValueClass}>--</span>
+                </div>
+              </div>
+              <div class={cellClass} data-cell>
+                <span
+                  class={`icon-[material-symbols--device-thermostat] ${cellIconClass} text-orange-500`}
+                ></span>
+                <div class="flex min-w-0 flex-col leading-tight">
+                  <span
+                    class={cellLabelClass}
+                    th:text="#{widget.weather.feelsLike}">体感</span
+                  >
+                  <span data-w-feels-like class={cellValueClass}>--</span>
+                </div>
+              </div>
+              <div class={cellClass} data-cell>
+                <span
+                  class={`icon-[material-symbols--humidity-percentage] ${cellIconClass} text-blue-400`}
+                ></span>
+                <div class="flex min-w-0 flex-col leading-tight">
+                  <span
+                    class={cellLabelClass}
+                    th:text="#{widget.weather.humidity}">湿度</span
+                  >
+                  <span data-w-humidity class={cellValueClass}>--</span>
+                </div>
+              </div>
+              <div class={cellClass} data-cell>
+                <span
+                  class={`icon-[material-symbols--compress] ${cellIconClass} text-violet-500`}
+                ></span>
+                <div class="flex min-w-0 flex-col leading-tight">
+                  <span
+                    class={cellLabelClass}
+                    th:text="#{widget.weather.pressure}">气压</span
+                  >
+                  <span data-w-pressure class={cellValueClass}>--</span>
+                </div>
+              </div>
+              <div class={cellClass} data-cell>
+                <span
+                  class={`icon-[material-symbols--cloud] ${cellIconClass} text-slate-400`}
+                ></span>
+                <div class="flex min-w-0 flex-col leading-tight">
+                  <span class={cellLabelClass} th:text="#{widget.weather.cloud}"
+                    >云量</span
+                  >
+                  <span data-w-cloud class={cellValueClass}>--</span>
+                </div>
+              </div>
+              <div class={cellClass} data-cell>
+                <span
+                  class={`icon-[material-symbols--wb-sunny] ${cellIconClass} text-amber-500`}
+                ></span>
+                <div class="flex min-w-0 flex-col leading-tight">
+                  <span class={cellLabelClass} th:text="#{widget.weather.uv}"
+                    >紫外线</span
+                  >
+                  <span data-w-uv class={cellValueClass}>--</span>
+                </div>
+              </div>
+              <div class={cellClass} data-cell>
+                <span
+                  class={`icon-[material-symbols--umbrella] ${cellIconClass} text-blue-500`}
+                ></span>
+                <div class="flex min-w-0 flex-col leading-tight">
+                  <span class={cellLabelClass} th:text="#{widget.weather.pop}"
+                    >降水概率</span
+                  >
+                  <span data-w-pop class={cellValueClass}>--</span>
+                </div>
+              </div>
+              <div class={cellClass} data-cell>
+                <span
+                  class={`icon-[material-symbols--water-drop] ${cellIconClass} text-sky-600`}
+                ></span>
+                <div class="flex min-w-0 flex-col leading-tight">
+                  <span
+                    class={cellLabelClass}
+                    th:text="#{widget.weather.precipitation}">降水量</span
+                  >
+                  <span data-w-precipitation class={cellValueClass}>--</span>
+                </div>
+              </div>
+              {/* 空气质量：数值 + 等级色块（色值由 JS 按 aqi_level 写入） */}
+              <div class={cellClass} data-cell>
+                <span
+                  class={`icon-[material-symbols--eco] ${cellIconClass} text-emerald-500`}
+                ></span>
+                <div class="flex min-w-0 flex-col leading-tight">
+                  <span class={cellLabelClass} th:text="#{widget.weather.air}"
+                    >空气质量</span
+                  >
+                  <span class="flex items-center gap-1">
+                    <span data-w-aqi class={cellValueClass}>--</span>
+                    <span
+                      data-w-aqi-badge
+                      class="hidden rounded px-1 text-[10px] font-semibold text-white"
+                      >--</span
+                    >
+                  </span>
+                </div>
+              </div>
+              <div class={cellClass} data-cell>
+                <span
+                  class={`icon-[material-symbols--wb-twilight] ${cellIconClass} text-amber-400`}
+                ></span>
+                <div class="flex min-w-0 flex-col leading-tight">
+                  <span
+                    class={cellLabelClass}
+                    th:text="#{widget.weather.sunrise}">日出</span
+                  >
+                  <span data-w-sunrise class={cellValueClass}>--</span>
+                </div>
+              </div>
+              <div class={cellClass} data-cell>
+                <span
+                  class={`icon-[material-symbols--wb-twilight-2] ${cellIconClass} text-orange-500`}
+                ></span>
+                <div class="flex min-w-0 flex-col leading-tight">
+                  <span
+                    class={cellLabelClass}
+                    th:text="#{widget.weather.sunset}">日落</span
+                  >
+                  <span data-w-sunset class={cellValueClass}>--</span>
+                </div>
+              </div>
+            </div>
+
+            {
+              /* 污染物分项：浅色小区域，3 列均分；标题行右侧挂首要污染物。
+                接口缺项一律显示 --（co 经常没有）；六项全无（腾讯 Key 模式）整块隐藏 */
+            }
+            <div
+              data-pollutants
+              class="rounded-xl border border-(--line-divider) bg-(--btn-regular-bg) px-2.5 py-2"
+            >
+              <div
+                class="mb-1.5 flex items-center justify-between gap-2 text-[10px] text-neutral-400 dark:text-neutral-500"
+              >
+                <span th:text="#{widget.weather.pollutants}">污染物浓度</span>
+                <span data-w-aqi-primary></span>
+              </div>
+              <div class="grid grid-cols-3 gap-x-2 gap-y-1 text-[10px]">
+                <span
+                  class="flex items-center justify-between gap-1 text-neutral-500 dark:text-neutral-400"
+                  ><span>PM2.5</span><span
+                    data-w-pm25
+                    class="font-medium text-neutral-700 dark:text-neutral-300"
+                    >--</span
+                  ></span
+                >
+                <span
+                  class="flex items-center justify-between gap-1 text-neutral-500 dark:text-neutral-400"
+                  ><span>PM10</span><span
+                    data-w-pm10
+                    class="font-medium text-neutral-700 dark:text-neutral-300"
+                    >--</span
+                  ></span
+                >
+                <span
+                  class="flex items-center justify-between gap-1 text-neutral-500 dark:text-neutral-400"
+                  ><span>O₃</span><span
+                    data-w-o3
+                    class="font-medium text-neutral-700 dark:text-neutral-300"
+                    >--</span
+                  ></span
+                >
+                <span
+                  class="flex items-center justify-between gap-1 text-neutral-500 dark:text-neutral-400"
+                  ><span>NO₂</span><span
+                    data-w-no2
+                    class="font-medium text-neutral-700 dark:text-neutral-300"
+                    >--</span
+                  ></span
+                >
+                <span
+                  class="flex items-center justify-between gap-1 text-neutral-500 dark:text-neutral-400"
+                  ><span>SO₂</span><span
+                    data-w-so2
+                    class="font-medium text-neutral-700 dark:text-neutral-300"
+                    >--</span
+                  ></span
+                >
+                <span
+                  class="flex items-center justify-between gap-1 text-neutral-500 dark:text-neutral-400"
+                  ><span>CO</span><span
+                    data-w-co
+                    class="font-medium text-neutral-700 dark:text-neutral-300"
+                    >--</span
+                  ></span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {
+          /* 收起 / 展开：主题色胶囊，悬浮反白。两种文案与图标都服务端渲染，
+            JS 只切 hidden（文案走 i18n 就不用在前端再维护一份字典） */
+        }
+        <button
+          type="button"
+          data-weather-toggle
+          aria-expanded="false"
+          class="mx-auto flex w-fit items-center rounded-full border border-(--line-divider) bg-(--btn-regular-bg) px-4 py-1.5 text-xs font-medium text-(--primary) transition hover:bg-(--primary) hover:text-white"
+        >
+          <span data-toggle-when="collapsed">
+            <span class="flex items-center gap-1">
+              <span class="icon-[material-symbols--more-horiz] text-base"
+              ></span>
+              <span th:text="#{common.more}">更多</span>
+            </span>
+          </span>
+          <span data-toggle-when="expanded" class="hidden">
+            <span class="flex items-center gap-1">
+              <span
+                class="icon-[material-symbols--keyboard-arrow-up-rounded] text-base"
+              ></span>
+              <span th:text="#{common.collapse}">收起</span>
+            </span>
+          </span>
+        </button>
+      </div>
     </div>
   </div>
 </WidgetLayout>
 
 <script is:inline>
   (function () {
-    var CACHE_KEY = "weather_cache";
-    var CACHE_TTL = 1 * 60 * 60 * 1000; // 天气缓存 1 小时
-    var IP_CACHE_KEY = "weather_ip_cache";
-    var IP_CACHE_TTL = 4 * 60 * 60 * 1000; // IP 定位缓存 4 小时
-    var REQUEST_GAP = 300; // 请求间隔 300ms（QPS=5 足够）
-    var API_BASE = "https://apis.map.qq.com/ws";
+    /* 数据源：uapis.cn 聚合天气（免注册、免 API Key，未给定位参数时按访客 IP 定位）。
+       接口会按请求的 Origin 回 Access-Control-Allow-Origin，所以可以直接 fetch，
+       不必像旧的腾讯位置服务那样走 JSONP 中转（那条路已被本版本替换掉）。 */
+    var API = "https://uapis.cn/api/v1/misc/weather";
+    var TIMEOUT = 10000; // 10s 未响应按失败处理，交给重试按钮
+    var CACHE_TTL = 30 * 60 * 1000; // 数据缓存 30 分钟（sessionStorage，按标签页会话）
+    var CACHE_PREFIX = "uapis_weather_";
 
-    // 客户端 i18n：复用 Layout.astro 注入的全局助手（缺失时退化为回退文案）
     var t =
       window.__onlynnI18n ||
       function (_key, fb) {
         return fb;
       };
 
-    var weatherIconMap = {
-      晴天: "mdi--weather-sunny",
-      多云: "mdi--weather-cloudy",
-      阴: "mdi--weather-cloudy-alert",
-      阵雨: "mdi--weather-rainy",
-      雷阵雨: "mdi--weather-lightning-rainy",
-      雷阵雨伴有冰雹: "mdi--weather-lightning-rainy",
-      雨夹雪: "mdi--weather-snowy-rainy",
-      小雨: "mdi--weather-rainy",
-      中雨: "mdi--weather-rainy",
-      大雨: "mdi--weather-pouring",
-      暴雨: "mdi--weather-pouring",
-      大暴雨: "mdi--weather-pouring",
-      特大暴雨: "mdi--weather-pouring",
-      阵雪: "mdi--weather-snowy",
-      小雪: "mdi--weather-snowy",
-      中雪: "mdi--weather-snowy",
-      大雪: "mdi--weather-snowy-heavy",
-      暴雪: "mdi--weather-snowy-heavy",
-      雾: "mdi--weather-fog",
-      冻雨: "mdi--weather-snowy-rainy",
-      沙尘暴: "mdi--weather-dust",
-      浮尘: "mdi--weather-dust",
-      扬沙: "mdi--weather-dust",
-      强沙尘暴: "mdi--weather-dust",
-      小到中雨: "mdi--weather-rainy",
-      中到大雨: "mdi--weather-rainy",
-      大到暴雨: "mdi--weather-pouring",
-      暴雨到大暴雨: "mdi--weather-pouring",
-      大暴雨到特大暴雨: "mdi--weather-pouring",
-      小到中雪: "mdi--weather-snowy",
-      中到大雪: "mdi--weather-snowy-heavy",
-      大到暴雪: "mdi--weather-snowy-heavy",
-      浓雾: "mdi--weather-fog",
-      霾: "mdi--weather-fog",
-      中度霾: "mdi--weather-fog",
-      重度霾: "mdi--weather-fog",
-      严重霾: "mdi--weather-fog",
+    /* ── 天气码 → material-symbols 圆角图标 ──
+       码值与和风天气一致（100 晴 / 305 小雨 / 501 雾 …）。只登记会「一码多态」的精确项，
+       其余按下标段兜底（3xx 雨、4xx 雪、5xx 雾霾沙尘），仍然认不出就按中文天气名的关键字
+       归类（雪/雷/雨/雾/霾/尘/雹/云/晴），最后兜底多云 —— 接口换码或返回没见过的天气名
+       都不会出现空格子。18:00–06:00 时晴 / 多云取夜间图标。 */
+    var CODE_ICON = {
+      100: "sunny",
+      101: "partly-cloudy-day",
+      102: "partly-cloudy-day",
+      103: "partly-cloudy-day",
+      104: "cloud",
+      150: "nightlight",
+      151: "partly-cloudy-night",
+      152: "partly-cloudy-night",
+      153: "partly-cloudy-night",
+      300: "rainy",
+      301: "rainy-heavy",
+      302: "thunderstorm",
+      303: "thunderstorm",
+      304: "weather-hail",
+      305: "rainy-light",
+      306: "rainy",
+      307: "rainy-heavy",
+      308: "storm",
+      309: "rainy-light",
+      310: "rainy-heavy",
+      311: "storm",
+      312: "storm",
+      313: "weather-mix",
+      314: "rainy-light",
+      315: "rainy",
+      316: "rainy-heavy",
+      317: "storm",
+      318: "storm",
+      350: "rainy",
+      351: "rainy-heavy",
+      399: "rainy",
+      400: "weather-snowy",
+      401: "weather-snowy",
+      402: "snowing-heavy",
+      403: "snowing-heavy",
+      404: "rainy-snow",
+      405: "rainy-snow",
+      406: "weather-snowy",
+      407: "weather-snowy",
+      408: "weather-snowy",
+      409: "snowing-heavy",
+      410: "snowing-heavy",
+      456: "rainy-snow",
+      457: "rainy-snow",
+      499: "weather-snowy",
+      500: "foggy",
+      501: "foggy",
+      502: "dehaze",
+      503: "grain",
+      504: "grain",
+      507: "grain",
+      508: "grain",
+      509: "foggy",
+      510: "foggy",
+      511: "dehaze",
+      512: "dehaze",
+      513: "dehaze",
+      514: "foggy",
+      515: "foggy",
+      900: "local-fire-department",
+      901: "severe-cold",
+      999: "cloud",
     };
 
-    var nightIconMap = {
-      晴天: "mdi--weather-night",
-      多云: "mdi--weather-night-partly-cloudy",
+    /* 大图标的配色：按天气分色（晴天暖黄、雨系冷蓝、雷暴紫、雪青、雾霾灰、
+       沙尘土黄、夜间靛蓝……），不再是清一色的主题色 —— 一眼能看出天气。
+       这些类名是完整字符串，Tailwind 扫得到（不做拼接） */
+    var ICON_COLOR = {
+      sunny: "text-amber-500",
+      nightlight: "text-indigo-400",
+      "partly-cloudy-day": "text-amber-400",
+      "partly-cloudy-night": "text-indigo-400",
+      cloud: "text-slate-400",
+      "rainy-light": "text-sky-500",
+      rainy: "text-sky-500",
+      "rainy-heavy": "text-sky-500",
+      thunderstorm: "text-violet-500",
+      "weather-hail": "text-sky-600",
+      "rainy-snow": "text-sky-400",
+      "weather-snowy": "text-sky-400",
+      "snowing-heavy": "text-sky-400",
+      foggy: "text-slate-400",
+      dehaze: "text-stone-400",
+      grain: "text-amber-600",
+      storm: "text-indigo-500",
+      "weather-mix": "text-teal-400",
+      "local-fire-department": "text-rose-500",
+      "severe-cold": "text-sky-500",
     };
 
-    function getWeatherIcon(weather) {
-      var isNight = new Date().getHours() >= 18 || new Date().getHours() < 6;
-      if (isNight && weather in nightIconMap) return nightIconMap[weather];
-      return weatherIconMap[weather] || "mdi--weather-cloudy";
-    }
-
-    function getConfig() {
-      try {
-        var el = document.getElementById("theme-config");
-        if (!el || !el.textContent) return null;
-        return JSON.parse(el.textContent);
-      } catch (e) {
-        return null;
+    function iconByName(name) {
+      if (!name) return null;
+      if (name.indexOf("雹") !== -1) return "weather-hail";
+      if (name.indexOf("雷") !== -1) return "thunderstorm";
+      if (name.indexOf("雪") !== -1) {
+        return name.indexOf("雨") !== -1 ? "rainy-snow" : "weather-snowy";
       }
+      if (name.indexOf("雨") !== -1) {
+        if (name.indexOf("大") !== -1 || name.indexOf("暴") !== -1)
+          return "rainy-heavy";
+        if (name.indexOf("小") !== -1 || name.indexOf("毛") !== -1)
+          return "rainy-light";
+        return "rainy";
+      }
+      if (name.indexOf("雾") !== -1) return "foggy";
+      if (name.indexOf("霾") !== -1) return "dehaze";
+      if (name.indexOf("尘") !== -1 || name.indexOf("沙") !== -1)
+        return "grain";
+      if (name.indexOf("晴") !== -1) return "sunny";
+      if (name.indexOf("云") !== -1 || name.indexOf("阴") !== -1)
+        return "partly-cloudy-day";
+      return null;
     }
 
-    function getCachedWeather() {
+    function pickIcon(code, name) {
+      var isNight = new Date().getHours() >= 18 || new Date().getHours() < 6;
+      var key = CODE_ICON[code];
+      if (!key) key = iconByName(String(name || ""));
+      if (!key) {
+        /* 没见过的码：按百位段归类（3xx 雨 / 4xx 雪 / 5xx 雾霾沙尘） */
+        var seg = String(code || "").charAt(0);
+        if (seg === "3") key = "rainy";
+        else if (seg === "4") key = "weather-snowy";
+        else if (seg === "5") key = "foggy";
+      }
+      if (isNight) {
+        if (key === "sunny") return "nightlight";
+        if (key === "partly-cloudy-day") return "partly-cloudy-night";
+      }
+      return key || "cloud";
+    }
+
+    /* 更新时间归一化：uapis 按查询方式给两种格式 —— 按访客 IP 定位时是
+       「2026-10-10 16:25:08」，指定城市 / 区划码时是「12 分钟前发布」；腾讯给
+       「2026-10-10 16:30」。统一成紧凑显示：绝对时间只留 HH:MM（不是今天就带月日），
+       相对时间去掉「发布」。原始值留给 title，悬浮可看全。 */
+    function formatTime(raw) {
+      var s = String(raw || "").trim();
+      if (!s) return { text: "", full: "" };
+      var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})/);
+      if (m) {
+        var now = new Date();
+        var sameDay =
+          Number(m[1]) === now.getFullYear() &&
+          Number(m[2]) === now.getMonth() + 1 &&
+          Number(m[3]) === now.getDate();
+        var hh = m[4].length < 2 ? "0" + m[4] : m[4];
+        var hhmm = hh + ":" + m[5];
+        return {
+          text: sameDay ? hhmm : m[2] + "-" + m[3] + " " + hhmm,
+          full: s,
+        };
+      }
+      var rel = s.replace(/发布$/, "").trim();
+      if (rel !== s) return { text: rel, full: s };
+      return { text: s.length > 12 ? s.slice(0, 12) + "…" : s, full: s };
+    }
+
+    /* ── 缓存 ── */
+
+    function readCache(key) {
       try {
-        var cached = sessionStorage.getItem(CACHE_KEY);
-        if (!cached) return null;
-        var data = JSON.parse(cached);
-        if (Date.now() - data.timestamp > CACHE_TTL) {
-          sessionStorage.removeItem(CACHE_KEY);
+        var raw = sessionStorage.getItem(CACHE_PREFIX + key);
+        if (!raw) return null;
+        var box = JSON.parse(raw);
+        if (!box || Date.now() - box.t > CACHE_TTL) {
+          sessionStorage.removeItem(CACHE_PREFIX + key);
           return null;
         }
-        return data;
+        return box.d;
       } catch (e) {
         return null;
       }
     }
 
-    function setCachedWeather(data) {
+    function writeCache(key, data) {
       try {
         sessionStorage.setItem(
-          CACHE_KEY,
-          JSON.stringify({ data: data, timestamp: Date.now() }),
+          CACHE_PREFIX + key,
+          JSON.stringify({ d: data, t: Date.now() }),
         );
+      } catch (e) {
+        /* 隐私模式等写不进去就算了，不影响本次渲染 */
+      }
+    }
+
+    function dropCache(key) {
+      try {
+        sessionStorage.removeItem(CACHE_PREFIX + key);
       } catch (e) {}
     }
 
-    function getCachedAdcode() {
+    /* ── 定位结果的共享 ──
+       欢迎弹窗的「来自 {location}」用的就是这份定位：只有**没有**配固定城市 / 区划码、
+       即真正按访客 IP 定位的那次响应才写（配了固定城市的站点，访客位置不该被顶成站长的
+       城市）。缓存键与字段名沿用弹窗既有的约定（weather_ip_cache + ad_info），
+       另外派发 onlynn:location —— 弹窗脚本通常先于本脚本执行完，靠事件补文案。
+       两套数据源都写这一份：uapis 的省市要归一（见 fetchUapis），腾讯的 ad_info 本来就是
+       nation/province/city/district 四段，直接透传（弹窗文案与旧版完全一致）。 */
+    var LOCATION_KEY = "weather_ip_cache";
+    var LOCATION_TTL = 4 * 60 * 60 * 1000; // 与欢迎弹窗一致：IP 定位缓存 4 小时
+
+    function readLocation() {
       try {
-        var raw = sessionStorage.getItem(IP_CACHE_KEY);
+        var raw = sessionStorage.getItem(LOCATION_KEY);
         if (!raw) return null;
         var d = JSON.parse(raw);
-        if (Date.now() - d.t > IP_CACHE_TTL) {
-          sessionStorage.removeItem(IP_CACHE_KEY);
+        if (Date.now() - d.t > LOCATION_TTL) {
+          sessionStorage.removeItem(LOCATION_KEY);
           return null;
         }
-        return d.adcode;
+        return d;
       } catch (e) {
         return null;
       }
     }
 
-    // 缓存写入：除 adcode 外同时保存完整 ad_info（国家/省/市/区县），
-    // 供欢迎弹窗等复用定位文本，避免同会话重复请求腾讯 IP 接口（兼容旧格式，无 ad_info 亦可）
-    function setCachedAdcode(adcode, ad_info) {
+    function writeLocation(adcode, adInfo) {
       try {
         sessionStorage.setItem(
-          IP_CACHE_KEY,
+          LOCATION_KEY,
           JSON.stringify({
-            adcode: adcode,
-            ad_info: ad_info || null,
+            adcode: String(adcode || ""),
+            ad_info: adInfo,
             t: Date.now(),
           }),
         );
       } catch (e) {}
+      var text =
+        (adInfo.nation || "") +
+        (adInfo.province || "") +
+        (adInfo.city || "") +
+        (adInfo.district || "");
+      if (!text) return;
+      window.dispatchEvent(
+        new CustomEvent("onlynn:location", { detail: { text: text } }),
+      );
     }
 
-    function delay(ms) {
-      return new Promise(function (r) {
-        setTimeout(r, ms);
+    /* ── 数据源一：uapis.cn（默认，免注册免 Key） ── */
+
+    function fetchJson(url) {
+      var timer = null;
+      var abort = null;
+      var opts = {};
+      if (typeof AbortController === "function") {
+        abort = new AbortController();
+        opts.signal = abort.signal;
+        timer = setTimeout(function () {
+          abort.abort();
+        }, TIMEOUT);
+      }
+      return fetch(url, opts)
+        .then(function (res) {
+          if (timer) clearTimeout(timer);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        })
+        .catch(function (err) {
+          if (timer) clearTimeout(timer);
+          throw err;
+        });
+    }
+
+    function fetchUapis(cfg) {
+      var params = new URLSearchParams();
+      if (cfg.adcode) params.set("adcode", cfg.adcode);
+      else if (cfg.city) params.set("city", cfg.city);
+      params.set("extended", "true");
+      params.set("forecast", "true");
+      return fetchJson(API + "?" + params.toString()).then(function (raw) {
+        if (!raw || raw.temperature === undefined)
+          throw new Error("bad payload");
+        var today = (raw.forecast && raw.forecast[0]) || {};
+        // 按 IP 定位（没配城市/区划码）的结果才当作「访客所在地」共享出去
+        if (!cfg.city && !cfg.adcode) {
+          var province = raw.province || "";
+          var city = raw.city || "";
+          /* 直辖市（北京市 / 上海市 / 天津市 / 重庆市）：省即市，接口还会把 city 报成
+             「北京城区」这类名字 —— 只留省 + 区，免得拼成「北京市北京城区通州区」 */
+          if (
+            province === "北京市" ||
+            province === "上海市" ||
+            province === "天津市" ||
+            province === "重庆市"
+          ) {
+            city = "";
+          } else if (city && province && province.indexOf(city) === 0) {
+            city = "";
+          }
+          writeLocation(raw.adcode, {
+            province: province,
+            city: city,
+            district: raw.district || "",
+          });
+        }
+        return {
+          source: "uapis",
+          city: raw.city,
+          province: raw.province,
+          district: raw.district,
+          report_time: raw.report_time,
+          temperature: raw.temperature,
+          weather: raw.weather,
+          weather_icon: raw.weather_icon,
+          temp_max: raw.temp_max,
+          temp_min: raw.temp_min,
+          wind_direction: raw.wind_direction,
+          wind_power: raw.wind_power,
+          humidity: raw.humidity,
+          feels_like: raw.feels_like,
+          visibility: raw.visibility,
+          pressure: raw.pressure,
+          uv: raw.uv === undefined ? today.uv_index : raw.uv,
+          pop: today.pop,
+          precipitation:
+            raw.precipitation === undefined ? today.precip : raw.precipitation,
+          cloud: raw.cloud === undefined ? today.cloud : raw.cloud,
+          aqi: raw.aqi,
+          aqi_level: raw.aqi_level,
+          aqi_category: raw.aqi_category,
+          aqi_primary: raw.aqi_primary,
+          air: raw.air_pollutants || {},
+          sunrise: today.sunrise,
+          sunset: today.sunset,
+        };
       });
     }
 
-    function renderWeather(result) {
-      var container = document.getElementById("weather-content");
-      var rt = result && result.realtime && result.realtime[0];
-      if (!container || !rt) {
-        renderError();
-        return;
-      }
-      var info = rt.infos || {};
-      var city = rt.district || rt.city || rt.province || "";
-      var icon = getWeatherIcon(info.weather);
+    /* ── 数据源二：腾讯位置服务（配了 Key 才走，等价于主题旧版实现） ──
+       腾讯接口没有 CORS 头，只能走 JSONP（旧版本也是这么做的）。天气接口必须给
+       adcode：先 IP 定位解析（失败 / 配额用尽就退回后台配置的「默认城市编码」，
+       旧版就是这行为），`type=now` 拿当前温度 / 天气 / 风 / 湿度 / 气压，
+       `type=future` 尽力拿今天的高低温（拿不到就不显示高低温那一行）。 */
 
-      container.innerHTML = "";
-
-      var root = document.createElement("div");
-      root.className = "flex flex-col gap-3 px-1";
-
-      // ── 第一行：城市 + 天气描述 ──
-      var row1 = document.createElement("div");
-      row1.className = "flex items-center justify-between";
-
-      var left1 = document.createElement("div");
-      left1.className = "flex items-center gap-1.5";
-
-      var pin = document.createElement("span");
-      pin.className = "icon-[mdi--map-marker] text-sm text-(--primary)";
-      left1.appendChild(pin);
-
-      var citySpan = document.createElement("span");
-      citySpan.className =
-        "text-sm font-medium text-neutral-700 dark:text-neutral-300";
-      citySpan.textContent = city;
-      left1.appendChild(citySpan);
-
-      var timeSpan = document.createElement("span");
-      timeSpan.className =
-        "text-[10px] text-neutral-400 dark:text-neutral-500 ml-1";
-      timeSpan.textContent =
-        formatTime(result._updated || Date.now()) +
-        t("widget.weather.updated", "更新");
-      left1.appendChild(timeSpan);
-
-      row1.appendChild(left1);
-
-      var weatherSpan = document.createElement("span");
-      weatherSpan.className = "text-xs text-neutral-400";
-      weatherSpan.textContent = info.weather || "";
-      row1.appendChild(weatherSpan);
-
-      root.appendChild(row1);
-
-      // ── 第二行：温度 + 风力湿度 ──
-      var row2 = document.createElement("div");
-      row2.className = "flex items-center justify-between";
-
-      var left2 = document.createElement("div");
-      left2.className = "flex items-center gap-3";
-
-      var iconSpan = document.createElement("span");
-      iconSpan.className = "icon-[" + icon + "] text-4xl text-(--primary)";
-      left2.appendChild(iconSpan);
-
-      var tempSpan = document.createElement("span");
-      tempSpan.className =
-        "text-3xl font-bold text-neutral-900 dark:text-neutral-100 leading-none";
-      tempSpan.appendChild(document.createTextNode(info.temperature || "--"));
-
-      var unit = document.createElement("span");
-      unit.className = "text-lg font-normal";
-      unit.textContent = "°C";
-      tempSpan.appendChild(unit);
-      left2.appendChild(tempSpan);
-      row2.appendChild(left2);
-
-      var right2 = document.createElement("div");
-      right2.className =
-        "flex flex-col items-end gap-0.5 text-xs text-neutral-500 dark:text-neutral-400";
-
-      var windSpan = document.createElement("span");
-      windSpan.textContent =
-        (info.wind_direction || "") +
-        " " +
-        (info.wind_power_v2 || info.wind_power || "");
-      right2.appendChild(windSpan);
-
-      var humSpan = document.createElement("span");
-      humSpan.textContent =
-        t("widget.weather.humidity", "湿度") +
-        " " +
-        (info.humidity || "--") +
-        "%";
-      right2.appendChild(humSpan);
-
-      row2.appendChild(right2);
-      root.appendChild(row2);
-
-      container.appendChild(root);
-    }
-
-    function formatTime(ts) {
-      var d = new Date(ts);
-      var h = d.getHours();
-      var m = d.getMinutes();
-      return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
-    }
-
-    function renderError(msg) {
-      var container = document.getElementById("weather-content");
-      if (!container) return;
-      container.innerHTML = "";
-
-      var wrapper = document.createElement("div");
-      wrapper.className =
-        "flex flex-col items-center justify-center gap-1 text-neutral-400 text-sm px-3 py-1";
-
-      var row = document.createElement("div");
-      row.className = "flex items-center gap-2";
-
-      var cloudIcon = document.createElement("span");
-      cloudIcon.className = "icon-[mdi--cloud-off-outline] text-base";
-      row.appendChild(cloudIcon);
-
-      var label = document.createElement("span");
-      label.textContent = t("widget.weather.error", "天气加载失败");
-      row.appendChild(label);
-
-      wrapper.appendChild(row);
-
-      if (msg) {
-        var detail = document.createElement("span");
-        detail.className = "text-xs mt-1 block text-center";
-        detail.textContent = msg;
-        wrapper.appendChild(detail);
-      }
-
-      container.appendChild(wrapper);
-    }
-
-    function showErrorKey() {
-      var container = document.getElementById("weather-content");
-      if (!container) return;
-      container.innerHTML = "";
-
-      var wrapper = document.createElement("div");
-      wrapper.className =
-        "flex items-center justify-center gap-2 text-neutral-400 text-sm px-3 py-1";
-
-      var keyIcon = document.createElement("span");
-      keyIcon.className = "icon-[mdi--key-variant] text-base";
-      wrapper.appendChild(keyIcon);
-
-      var label = document.createElement("span");
-      label.textContent = t("widget.weather.noKey", "请配置腾讯地图 Key");
-      wrapper.appendChild(label);
-
-      container.appendChild(wrapper);
-    }
-
+    var TC_BASE = "https://apis.map.qq.com/ws";
     var _cbIdx = 0;
+
     function jsonp(url) {
       return new Promise(function (resolve, reject) {
-        var cbName = "__tencent_cb_" + ++_cbIdx;
+        var cbName = "__onlynn_tc_cb_" + ++_cbIdx;
         var sep = url.indexOf("?") === -1 ? "?" : "&";
         var script = document.createElement("script");
         script.src = url + sep + "callback=" + cbName;
@@ -354,7 +803,7 @@ const className = Astro.props.class;
         var timer = setTimeout(function () {
           reject(new Error("JSONP timeout"));
           cleanup();
-        }, 10000);
+        }, TIMEOUT);
         function cleanup() {
           clearTimeout(timer);
           try {
@@ -372,114 +821,339 @@ const className = Astro.props.class;
       });
     }
 
-    // 判断是否 QPS 限流状态码
-    function isRateLimited(status) {
-      return status === 101 || status === 102;
-    }
-
-    // JSONP 请求封装（V8）：限流码 101/102 不重试、直接抛错。
-    // 原实现以 1.5s 间隔重试 2 次，限流期间每访客请求 ×3 放大；
-    // 天气为低优先级数据，限流时直接走错误提示（配合缓存展示）即可。
-    // 注：不改为 fetch——腾讯位置服务 API 无 CORS 头，
-    // 浏览器 fetch 会被跨域拦截，JSONP 是纯前端方案下唯一可用通道。
-    async function jsonpOnce(url) {
-      var data = await jsonp(url);
-      if (isRateLimited(data.status)) {
-        throw new Error("weather rate-limited");
-      }
-      return data;
-    }
-
-    function loadWeather() {
-      var cached = getCachedWeather();
-      if (cached) {
-        renderWeather(cached.data);
-        return;
-      }
-
-      var config = getConfig();
-      var widgets =
-        (config &&
-          config.sidebar &&
-          config.sidebar.widgetsConfig &&
-          (config.sidebar.widgetsConfig.rightWidgets ||
-            config.sidebar.widgetsConfig.widgets)) ||
-        [];
-      var wc = null;
-      for (var i = 0; i < widgets.length; i++) {
-        if (widgets[i].value === "weather") {
-          wc = widgets[i];
-          break;
-        }
-      }
-      var key = wc && wc.tencent_key;
-      var defaultAdcode = (wc && wc.default_city) || "110000";
-
-      if (!key) {
-        showErrorKey();
-        return;
-      }
-
-      // 请求天气：给定 adcode（限流不重试，见 jsonpOnce）
-      async function fetchWeather(adcode) {
-        var wxData = await jsonpOnce(
-          API_BASE +
-            "/weather/v1/?key=" +
-            key +
-            "&adcode=" +
-            adcode +
-            "&type=now&output=jsonp",
-        );
-        if (wxData.status === 0 && wxData.result) {
-          return wxData.result;
-        }
-        throw new Error(wxData.message || "天气查询失败");
-      }
-
-      // 优先使用 IP 缓存；没有则先请求 IP 定位（限流也自动重试）
-      var adcodePromise;
-      var cachedAdcode = getCachedAdcode();
-      if (cachedAdcode) {
-        adcodePromise = Promise.resolve(cachedAdcode);
-      } else {
-        adcodePromise = jsonpOnce(
-          API_BASE + "/location/v1/ip?key=" + key + "&output=jsonp",
-        )
-          .then(function (ipData) {
-            if (
-              ipData.status === 0 &&
-              ipData.result &&
-              ipData.result.ad_info &&
-              ipData.result.ad_info.adcode
-            ) {
-              var code = String(ipData.result.ad_info.adcode);
-              setCachedAdcode(code, ipData.result.ad_info);
-              return code;
-            }
-            return defaultAdcode;
-          })
-          .catch(function () {
-            return defaultAdcode;
+    function resolveAdcode(cfg) {
+      var cached = readLocation();
+      if (cached && cached.adcode)
+        return Promise.resolve({ adcode: cached.adcode, fromIp: true });
+      return jsonp(
+        TC_BASE +
+          "/location/v1/ip?key=" +
+          encodeURIComponent(cfg.key) +
+          "&output=jsonp",
+      )
+        .then(function (res) {
+          var info =
+            res && res.status === 0 && res.result && res.result.ad_info;
+          if (!info || !info.adcode) throw new Error("ip failed");
+          writeLocation(String(info.adcode), {
+            nation: info.nation || "",
+            province: info.province || "",
+            city: info.city || "",
+            district: info.district || "",
           });
-      }
-
-      adcodePromise
-        .then(async function (adcode) {
-          await delay(REQUEST_GAP);
-          return fetchWeather(adcode);
-        })
-        .then(function (result) {
-          result._updated = Date.now();
-          setCachedWeather(result);
-          renderWeather(result);
+          return { adcode: String(info.adcode), fromIp: true };
         })
         .catch(function () {
-          renderError(t("widget.weather.busy", "天气服务繁忙，请稍后刷新"));
+          /* IP 定位失败（配额用尽 / 网络 / Key 域名限制）→ 用配置的默认城市编码 */
+          return { adcode: cfg.fallbackAdcode || "110000", fromIp: false };
         });
     }
 
-    loadWeather();
-    // 换页后数据刷新：由 SwupScriptsPlugin 重执行本脚本时自动覆盖；
-    // 原 swup:contentReplaced 监听删除（v3 事件名从未触发）。
+    function fetchTencent(cfg) {
+      return resolveAdcode(cfg).then(function (loc) {
+        var base =
+          TC_BASE +
+          "/weather/v1/?key=" +
+          encodeURIComponent(cfg.key) +
+          "&adcode=" +
+          encodeURIComponent(loc.adcode) +
+          "&output=jsonp";
+        return jsonp(base + "&type=now").then(function (res) {
+          var rt =
+            res && res.status === 0 && res.result && res.result.realtime
+              ? res.result.realtime[0]
+              : null;
+          if (!rt || !rt.infos) throw new Error("bad payload");
+          var i = rt.infos;
+          var out = {
+            source: "tencent",
+            city: rt.city || "",
+            province: rt.province || "",
+            district: rt.district || "",
+            /* 时间原始值整段留着（formatTime 负责压成 HH:MM，完整值进 title 气泡） */
+            report_time: rt.update_time || "",
+            temperature: i.temperature,
+            weather: i.weather,
+            wind_direction: i.wind_direction,
+            wind_power: i.wind_power_v2 || i.wind_power,
+            humidity: i.humidity,
+            pressure: i.air_pressure,
+            air: {},
+          };
+          return jsonp(base + "&type=future")
+            .then(function (f) {
+              var infos =
+                f && f.status === 0 && f.result && f.result.forecast
+                  ? f.result.forecast[0].infos
+                  : null;
+              var day = infos && infos[0];
+              if (day) {
+                if (day.day && day.day.temperature !== undefined)
+                  out.temp_max = day.day.temperature;
+                if (day.night && day.night.temperature !== undefined)
+                  out.temp_min = day.night.temperature;
+              }
+              return out;
+            })
+            .catch(function () {
+              return out; // 高低温拿不到就不显示那一行，其余照常
+            });
+        });
+      });
+    }
+
+    /* ── 每实例状态：与节点一一对应，不共享全局变量 ── */
+
+    function load(box, force) {
+      var cfg = {
+        city: box.dataset.city || "",
+        adcode: box.dataset.adcode || "",
+        extended: box.dataset.extended !== "false",
+        /* 配了腾讯位置服务 Key 就走腾讯（等价旧版实现）；留空走免 Key 的 uapis */
+        key: box.dataset.key || "",
+        fallbackAdcode: box.dataset.fallbackAdcode || "",
+      };
+      /* 缓存键带数据源前缀：切了数据源不会误用另一边的旧载荷。
+         键只由**该数据源自己用到的定位参数**决定 —— uapis 看固定城市 / 区划码
+         （都空就是按 IP 定位，键为 ip）；腾讯看区划码 / 默认城市编码。
+         别把「默认城市编码」算进 uapis 的键：它只属于腾讯模式 */
+      var source = cfg.key ? "tencent" : "uapis";
+      var cacheKey =
+        source +
+        "_" +
+        (source === "tencent"
+          ? cfg.adcode || cfg.fallbackAdcode || "ip"
+          : cfg.adcode || cfg.city || "ip");
+      var states = {
+        loading: box.querySelector("[data-weather-loading]"),
+        error: box.querySelector("[data-weather-error]"),
+        content: box.querySelector("[data-weather-content]"),
+      };
+      var toggle = box.querySelector("[data-weather-toggle]");
+      var ext = box.querySelector("[data-weather-extended]");
+
+      function show(which) {
+        states.loading.classList.toggle("hidden", which !== "loading");
+        states.error.classList.toggle("hidden", which !== "error");
+        states.content.classList.toggle("hidden", which !== "content");
+      }
+
+      function setText(name, value) {
+        var el = box.querySelector("[data-w-" + name + "]");
+        if (!el) return;
+        el.textContent =
+          value === null || value === undefined || value === "" ? "--" : value;
+      }
+
+      /* 可选值：没有就写占位符并**把所在的小方糖整格隐藏**（避免展开后一片 --），
+         返回是否有值 —— 调用方据此决定污染物面板 / 整个展开区的显隐 */
+      function setOptional(name, value) {
+        var el = box.querySelector("[data-w-" + name + "]");
+        var has = !(value === null || value === undefined || value === "");
+        if (!el) return has;
+        el.textContent = has ? value : "--";
+        var cell = el.closest("[data-cell]");
+        if (cell) cell.classList.toggle("hidden", !has);
+        return has;
+      }
+
+      /* 收起 / 展开：只切扩展块的 hidden，卡片高度由内容决定。
+         两种文案与图标都渲染在按钮里，这里只切 hidden —— 前端不用再维护一份 i18n */
+      function setExpanded(expanded) {
+        if (!ext || !toggle) return;
+        ext.classList.toggle("hidden", !expanded);
+        toggle.setAttribute("aria-expanded", String(expanded));
+        toggle.querySelectorAll("[data-toggle-when]").forEach(function (el) {
+          el.classList.toggle(
+            "hidden",
+            el.dataset.toggleWhen !== (expanded ? "expanded" : "collapsed"),
+          );
+        });
+      }
+
+      if (toggle && !toggle.dataset.bound) {
+        toggle.dataset.bound = "1";
+        toggle.addEventListener("click", function () {
+          setExpanded(ext.classList.contains("hidden"));
+        });
+      }
+
+      function render(data) {
+        var place = data.city || data.province || "";
+        if (data.district && data.district !== place) {
+          place = place ? place + " · " + data.district : data.district;
+        }
+        var cityEl = box.querySelector("[data-w-city]");
+        if (cityEl) {
+          cityEl.textContent = place || "--";
+          cityEl.setAttribute("title", place || "");
+        }
+        /* 更新时间：两种接口格式归一（绝对时间 → HH:MM，相对时间去掉「发布」），
+           完整原始值进 title —— 悬浮时用浏览器原生小气泡显示「更新 …」 */
+        var tm = formatTime(data.report_time);
+        var timeEl = box.querySelector("[data-w-report-time]");
+        var timeChip = box.querySelector("[data-w-time]");
+        if (timeEl) timeEl.textContent = tm.text || "--";
+        if (timeChip) {
+          timeChip.classList.toggle("hidden", !tm.text);
+          if (tm.text)
+            timeChip.setAttribute(
+              "title",
+              t("widget.weather.updated", "更新") + " " + tm.full,
+            );
+        }
+        setText("temp", data.temperature);
+        setText("weather", data.weather);
+
+        var iconEl = box.querySelector("[data-w-icon]");
+        if (iconEl) {
+          var key = pickIcon(data.weather_icon, data.weather);
+          iconEl.className =
+            "icon-[material-symbols--" +
+            key +
+            "-rounded] shrink-0 text-[2.6rem] " +
+            (ICON_COLOR[key] || "text-slate-400");
+        }
+        show("content");
+
+        /* 后台关掉「扩展信息」：按钮一起藏掉（没有可展开的东西），
+           扩展块保持初始的 hidden，收起态就是全部内容 */
+        if (!cfg.extended) {
+          if (toggle) toggle.classList.add("hidden");
+          return;
+        }
+
+        var num = function (v, unit) {
+          return v === null || v === undefined || v === ""
+            ? null
+            : v + (unit || "");
+        };
+
+        /* 今日高低温：两个值缺一就不显示这一行（腾讯 Key 模式 future 拿不到时会缺） */
+        var hasMax = data.temp_max !== undefined && data.temp_max !== "";
+        var hasMin = data.temp_min !== undefined && data.temp_min !== "";
+        setText("temp-max", data.temp_max);
+        setText("temp-min", data.temp_min);
+        var hlRow = box.querySelector("[data-highlow]");
+        if (hlRow) hlRow.classList.toggle("hidden", !(hasMax && hasMin));
+
+        /* 可选小项：没有数据的整格隐藏 —— 腾讯 Key 模式只给得了风 / 湿度 / 气压，
+           展开后不该是一片 "--" */
+        setOptional("feels-like", num(data.feels_like, "°"));
+        setOptional("humidity", num(data.humidity, "%"));
+        setOptional(
+          "wind",
+          data.wind_direction
+            ? data.wind_direction + " " + (data.wind_power || "")
+            : null,
+        );
+        setOptional("visibility", num(data.visibility, "km"));
+        setOptional("pressure", num(data.pressure, "hPa"));
+        setOptional("uv", data.uv);
+        setOptional("pop", num(data.pop, "%"));
+        setOptional("precipitation", num(data.precipitation, "mm"));
+        setOptional("cloud", num(data.cloud, "%"));
+
+        /* 空气质量：aqi_level 1~6（优 / 良 / 轻度 / 中度 / 重度 / 严重）六档配色 */
+        var level = Number(data.aqi_level) || 0;
+        var colors = {
+          1: "#22c55e",
+          2: "#eab308",
+          3: "#f97316",
+          4: "#ef4444",
+          5: "#a855f7",
+          6: "#7f1d1d",
+        };
+        var badge = box.querySelector("[data-w-aqi-badge]");
+        var hasAqi = setOptional("aqi", data.aqi);
+        if (badge) {
+          badge.classList.toggle("hidden", !hasAqi);
+          if (hasAqi) {
+            badge.textContent = data.aqi_category || "--";
+            badge.style.backgroundColor = colors[level] || "#9ca3af";
+          }
+        }
+        setText(
+          "aqi-primary",
+          data.aqi_primary
+            ? t("widget.weather.primaryPollutant", "首要污染物") +
+                " " +
+                data.aqi_primary
+            : "",
+        );
+
+        /* 污染物分项：六项全无就整块隐藏 */
+        var air = data.air || {};
+        var airKeys = ["pm25", "pm10", "o3", "no2", "so2", "co"];
+        var anyAir = false;
+        for (var ai = 0; ai < airKeys.length; ai++) {
+          if (setOptional(airKeys[ai], air[airKeys[ai]])) anyAir = true;
+        }
+        var panel = box.querySelector("[data-pollutants]");
+        if (panel) panel.classList.toggle("hidden", !anyAir);
+
+        setOptional("sunrise", data.sunrise);
+        setOptional("sunset", data.sunset);
+
+        /* 展开区一件可显示的内容都没有（腾讯 Key 模式且只拿到温度/描述）→
+           扩展块与胶囊按钮一起隐藏，卡片就只剩主信息 */
+        if (ext) {
+          var anyCell = ext.querySelector("[data-cell]:not(.hidden)");
+          var anyPanel = panel && !panel.classList.contains("hidden");
+          if (!anyCell && !anyPanel) {
+            ext.classList.add("hidden");
+            if (toggle) toggle.classList.add("hidden");
+          }
+        }
+      }
+
+      function fail() {
+        var msg = box.querySelector("[data-w-error-msg]");
+        if (msg)
+          msg.textContent = t(
+            "widget.weather.busy",
+            "天气服务繁忙，请稍后刷新",
+          );
+        show("error");
+      }
+
+      var cached = force ? null : readCache(cacheKey);
+      /* 缓存也过一遍载荷校验：写进去的虽然是校验过的数据，但 sessionStorage 可能被
+         外部脚本/手工改坏 —— 坏缓存直接当没有，走真实请求，免得整屏 "--" 卡 30 分钟 */
+      if (cached && cached.temperature !== undefined) {
+        render(cached);
+        return;
+      }
+
+      show("loading");
+      var job = source === "tencent" ? fetchTencent(cfg) : fetchUapis(cfg);
+      job
+        .then(function (data) {
+          writeCache(cacheKey, data);
+          render(data);
+        })
+        .catch(fail);
+    }
+
+    function init(box) {
+      if (box.dataset.weatherInit !== "true") return;
+      /* 换页时脚本会随容器重建重跑，节点是新的 → 不会被跳过；
+         同一节点上因故重跑两次时这个标记兜底（防止叠加渲染） */
+      if (box.dataset.weatherBound === "1") return;
+      box.dataset.weatherBound = "1";
+
+      var retry = box.querySelector("[data-weather-retry]");
+      if (retry) {
+        retry.addEventListener("click", function () {
+          var key = box.dataset.adcode || box.dataset.city || "ip";
+          dropCache(key);
+          load(box, true);
+        });
+      }
+      load(box, false);
+    }
+
+    var boxes = document.querySelectorAll("[data-weather-init]");
+    for (var i = 0; i < boxes.length; i++) init(boxes[i]);
   })();
 </script>
