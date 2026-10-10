@@ -423,6 +423,12 @@ export interface Widget {
   show_visits?: boolean;
   show_upvotes?: boolean;
   show_comments?: boolean;
+  // 天气小组件：uapis.cn 免 Key 接口（默认）与腾讯位置服务（配了 tencent_key 才走）
+  // 两条路；adcode 优先级高于 city，两项都留空 = 按访客 IP 定位。
+  // 腾讯模式额外用 default_city 作为 IP 定位失败时的回退区划码
+  city?: string;
+  adcode?: string;
+  extended?: boolean;
   tencent_key?: string;
   default_city?: string;
   fallback_text?: string;

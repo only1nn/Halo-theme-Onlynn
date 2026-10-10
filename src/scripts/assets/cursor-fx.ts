@@ -11,12 +11,18 @@
  * 护栏（逐条对应上游的缺口）：
  *  1. 粒子硬上限 + 对象池：移动 ≤150、单次点击 ≤60、总数 ≤300
  *  2. 没有粒子就停掉 rAF，下一个指针事件再启动（上游是常驻循环）
- *  3. prefers-reduced-motion: reduce 时完全不启动
+ *  3. prefers-reduced-motion: reduce 时完全不启动（该偏好中途改变会重算，见 watchMotionPref）
  *  4. 标签页隐藏时暂停，回来再续（保留既有粒子）
  *  5. 指针事件按距离 + 时间双阈值节流，并合并到一帧里处理
  *  6. DPR 感知；resize 重建画布
- *  7. pointer: coarse（触摸设备）默认不启用，用「移动端特效显示」覆盖
+ *  7. 触摸/手写笔事件默认不启用，用「移动端特效显示」覆盖 —— **判据是事件自身的
+ *     pointerType，不是媒体查询**。早期用 (pointer: coarse) 当全局门，结果在混合设备上
+ *     误杀鼠标：Chromium 对触屏笔记本（Surface 一类）按「主指针」判 coarse 且与鼠标是否
+ *     在用无关；Firefox 的 pointer 还会随最近使用的设备动态翻转 —— 于是「只在部分浏览器
+ *     没有特效」和「换个页/碰一下触屏后特效突然消失」（apply() 重新判定 → stop()）
+ *     两种反馈都由此而来。现改为按事件过滤：鼠标/触控板一律放行，手指与笔按开关。
  *  8. 单次绑定守卫，换页后按需重建画布
+ *  9. 没有 PointerEvent 的浏览器（旧 Safari / 老 WebView）回退到 mouse* 事件
  *
  * 配置读自 Layout 注入的 #theme-config → enhance.cursorFx。
  */
@@ -111,10 +117,30 @@
     );
   }
 
-  function isCoarse() {
-    return (
-      !!window.matchMedia && window.matchMedia("(pointer: coarse)").matches
-    );
+  /*
+    触摸 / 手写笔判据：看**事件自己的** pointerType，不看媒体查询。
+    (pointer: coarse) 描述的是「主指针」而不是「当前这个事件是谁发的」：Chromium
+    对触屏笔记本（Surface 一类）可能一直报 coarse（哪怕正在用鼠标），Firefox 的
+    pointer 还会随最近使用的设备动态翻转。拿它当全局开关，混合设备上的鼠标用户会被
+    整片误杀，判定时机一变还会出现「特效时有时无」。pointerType 每个事件自带，不会误伤。
+  */
+  function isTouchLike(e) {
+    var t = e && e.pointerType;
+    return t === "touch" || t === "pen";
+  }
+
+  /*
+    「减少动效」偏好在会话中途是可能变的（系统设置被改、投屏/省电模式切换）。
+    只在装载时判一次的话，用户把动画关掉再打开，特效就再也不回来了 —— 监听变化重算。
+  */
+  function watchMotionPref() {
+    if (!window.matchMedia) return;
+    var mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    var onChange = function () {
+      apply();
+    };
+    if (mq.addEventListener) mq.addEventListener("change", onChange);
+    else if (mq.addListener) mq.addListener(onChange);
   }
 
   function readConfig() {
@@ -931,8 +957,8 @@
   /* ── 指针事件 ── */
 
   function allowPointer(e) {
-    // 触摸设备默认不启用，除非后台开了「移动端特效显示」
-    return e.pointerType !== "touch" || !!cfg.mobile;
+    // 手指与手写笔默认不启用，除非后台开了「移动端特效显示」
+    return !isTouchLike(e) || !!cfg.mobile;
   }
 
   function onMove(e) {
@@ -981,7 +1007,8 @@
     // 访客在显示设置面板里关掉了（护栏 8 之外的另一道门）
     if (document.body.classList.contains("cursor-fx-off")) return false;
     if (prefersReducedMotion()) return false;
-    if (isCoarse() && !cfg.mobile) return false;
+    // 触摸设备不在这里判：输入设备是「每个事件」的属性（见 isTouchLike），
+    // 全局判一次会在混合设备上误杀鼠标
     if (!document.createElement("canvas").getContext) return false;
     return true;
   }
@@ -1054,8 +1081,41 @@
 
   /* ── 绑定 ── */
 
-  window.addEventListener("pointermove", onMove, { passive: true });
-  window.addEventListener("pointerdown", onDown, { passive: true });
+  /*
+    PointerEvent 自 Chrome 55 / Firefox 59 / Safari 13 起可用。更老的浏览器（旧 Safari、
+    老 Android WebView）里没有它 —— 只绑 pointermove/pointerdown 的话，一个事件都收不到，
+    表现成「这台/这个浏览器没有鼠标特效」。缺了它就用 mouse* 顶上，并补一个只含本脚本
+    所需字段的最小指针外观（下面的处理只读 pointerType/button/clientX/Y/target）。
+  */
+  var asPointer = function (e) {
+    return {
+      pointerType: "mouse",
+      button: e.button || 0,
+      clientX: e.clientX,
+      clientY: e.clientY,
+      target: e.target,
+    };
+  };
+
+  if (typeof window.PointerEvent === "function") {
+    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerdown", onDown, { passive: true });
+  } else {
+    window.addEventListener(
+      "mousemove",
+      function (e) {
+        onMove(asPointer(e));
+      },
+      { passive: true },
+    );
+    window.addEventListener(
+      "mousedown",
+      function (e) {
+        onDown(asPointer(e));
+      },
+      { passive: true },
+    );
+  }
 
   window.addEventListener("resize", function () {
     if (!running) return;
@@ -1085,40 +1145,38 @@
     if (running) buildSprites();
   });
 
-  // 换页后 #theme-config 可能与上次不同（例如进了另一种页面模板）
+  /* 配置指纹：readConfig() 已把开发期的旧别名归一，这里比的是归一后的值 ——
+     早期版本在 reapply 里直接读原始 JSON，别名值（stardust/dot/burst…）会让指纹每次
+     换页都不相等，于是每换一页就整块重启一次（画布重建、精灵重烘）。 */
+  function cfgKey(c) {
+    return [c.move, c.click, c.opacity, c.mobile, c.emoji, c.words].join("|");
+  }
+
+  // 换页后 #theme-config 可能与上次不同（例如进了另一种页面模板），画布也可能不在了
   function reapply() {
-    if (!running) {
-      apply();
+    var next = readConfig();
+    if (!next) {
+      /* 新页读不到特效配置（模板没吐 theme-config / JSON 解析失败）时**不当成「已关闭」**：
+         保留上一份 cfg，别把正在跑的特效停掉。真的两个特效都关了的话，
+         这个脚本根本不会被引入（CursorEffects.astro 的门控）。 */
+      if (running && (!canvas || !canvas.parentNode)) {
+        running = false;
+        start();
+      }
       return;
     }
-    var el = document.getElementById("theme-config");
-    var next = null;
-    try {
-      next =
-        el && el.textContent
-          ? JSON.parse(el.textContent).enhance?.cursorFx
-          : null;
-    } catch (e) {
-      next = null;
-    }
-    var nextKey = next
-      ? [next.move, next.click, next.opacity, next.mobile].join("|")
-      : "";
-    var nowKey = cfg
-      ? [cfg.move, cfg.click, cfg.opacity, cfg.mobile].join("|")
-      : "";
-    if (nextKey !== nowKey) {
+    if (running && cfgKey(next) !== (cfg ? cfgKey(cfg) : "")) {
       stop();
       apply();
       return;
     }
-    if (!canvas || !canvas.parentNode) {
-      running = false;
-      apply();
-    }
+    apply();
   }
 
   apply();
+  watchMotionPref();
   document.addEventListener("astro:page-load", reapply);
-  document.addEventListener("swup:contentReplaced", reapply);
+  // Swup 4 的 DOM 事件名是 swup:<hook>（这里是 swup:page:view）；Swup 3 时代的
+  // swup:contentReplaced 在本项目的 Swup 4 上永远不会触发，别照抄
+  document.addEventListener("swup:page:view", reapply);
 })();
