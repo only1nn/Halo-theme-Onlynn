@@ -1,10 +1,12 @@
 ---
-// 欢迎弹窗：访客进入网站时显示欢迎卡片，IP 定位复用天气小组件
-// （腾讯位置服务 WebService API + weather_ip_cache），避免重复请求。
+// 欢迎弹窗：访客进入网站时显示欢迎卡片，IP 定位**复用天气小组件**的定位结果
+// （uapis.cn 天气接口按访客 IP 定位，写进 weather_ip_cache 并派发 onlynn:location），
+// 弹窗自己不请求任何定位接口，也不会重复请求。
 // - 位置：电脑端四角可配（top-left/top-right/bottom-left/bottom-right），
 //   移动端固定底部居中（媒体查询强制）
 // - 关闭记忆：sessionStorage，本次会话不再弹出，重新打开网站再次弹出
-// - 降级：未配置 Key / 定位失败时 {location} 显示 fallbackLocation 文案
+// - 降级：没有定位结果（如未启用天气小组件、或首次加载的竞态）时
+//   {location} 显示 fallbackLocation 文案
 // - 样式：沿用主题 fuwari 卡片语言（card-base / --btn-regular-bg / 主色点缀），
 //   开启「高级材质」时跟随导航栏毛玻璃；{location} 以主题色高亮作为视觉焦点
 interface Props {
@@ -162,7 +164,6 @@ interface Props {
     var CLOSED_KEY = "onlynn-welcome-closed-v1";
     var IP_CACHE_KEY = "weather_ip_cache";
     var IP_CACHE_TTL = 4 * 60 * 60 * 1000; // 与天气小组件一致：IP 定位缓存 4 小时
-    var API_BASE = "https://apis.map.qq.com/ws";
 
     function getThemeConfig() {
       // I27：读/写 window.__themeConfig 缓存（与 scripts/assets/_theme-config.ts
@@ -273,23 +274,6 @@ interface Props {
       if (suffixEl) suffixEl.textContent = parts[1] || "";
     }
 
-    // 从天气小组件配置读取腾讯位置服务 Key（复用现有 Key，与 Weather.astro 一致）
-    function getTencentKey() {
-      var widgets =
-        (config &&
-          config.sidebar &&
-          config.sidebar.widgetsConfig &&
-          (config.sidebar.widgetsConfig.rightWidgets ||
-            config.sidebar.widgetsConfig.widgets)) ||
-        [];
-      for (var i = 0; i < widgets.length; i++) {
-        if (widgets[i].value === "weather" && widgets[i].tencent_key) {
-          return widgets[i].tencent_key;
-        }
-      }
-      return "";
-    }
-
     // 读取天气 IP 缓存（含完整 ad_info 的新格式；旧格式只有 adcode 则视为无文本）
     function getCachedAdInfo() {
       try {
@@ -317,75 +301,17 @@ interface Props {
       return parts.join("");
     }
 
-    // JSONP 请求（腾讯位置服务 API 无 CORS 头，浏览器 fetch 会被拦截，JSONP 是唯一可行通道）
-    var _cbIdx = 0;
-    function jsonp(url) {
-      return new Promise(function (resolve, reject) {
-        var cbName = "__welcome_tencent_cb_" + ++_cbIdx;
-        var sep = url.indexOf("?") === -1 ? "?" : "&";
-        var script = document.createElement("script");
-        script.src = url + sep + "callback=" + cbName;
-        script.onerror = function () {
-          reject(new Error("JSONP request failed"));
-          cleanup();
-        };
-        var timer = setTimeout(function () {
-          reject(new Error("JSONP timeout"));
-          cleanup();
-        }, 10000);
-        function cleanup() {
-          clearTimeout(timer);
-          try {
-            delete window[cbName];
-          } catch (e) {
-            window[cbName] = undefined;
-          }
-          if (script.parentNode) script.parentNode.removeChild(script);
-        }
-        window[cbName] = function (data) {
-          resolve(data);
-          cleanup();
-        };
-        document.head.appendChild(script);
-      });
-    }
+    // 天气小组件定位成功后派发（onlynn:location）：弹窗脚本通常先于天气脚本跑完，
+    // 首次访问时读不到缓存，靠这个事件把地点文案补上
+    window.addEventListener("onlynn:location", function (e) {
+      var text = e && e.detail && e.detail.text;
+      if (text) applyLocation(text);
+    });
 
-    // 请求 IP 定位：成功后更新文案并回写天气缓存（adcode + ad_info），
-    // 天气小组件后续直接读缓存，不再重复请求
-    function fetchLocation() {
-      var key = getTencentKey();
-      if (!key) return;
-      jsonp(API_BASE + "/location/v1/ip?key=" + key + "&output=jsonp")
-        .then(function (data) {
-          if (data && data.status === 0 && data.result && data.result.ad_info) {
-            var info = data.result.ad_info;
-            var text = formatLocation(info);
-            if (text) applyLocation(text);
-            try {
-              sessionStorage.setItem(
-                IP_CACHE_KEY,
-                JSON.stringify({
-                  adcode: String(info.adcode || ""),
-                  ad_info: info,
-                  t: Date.now(),
-                }),
-              );
-            } catch (e) {}
-          }
-        })
-        .catch(function () {
-          // 请求失败保持降级文案，不影响弹窗展示
-        });
-    }
-
-    // 定位：有缓存立即使用；否则先降级展示，再异步请求刷新
+    // 定位：有缓存（上次会话/上一次定位）立即使用，否则先降级展示，
+    // 等天气小组件的 onlynn:location 事件把真实地点补上
     var cached = getCachedAdInfo();
-    if (cached) {
-      applyLocation(formatLocation(cached) || fallback);
-    } else {
-      applyLocation(fallback);
-      fetchLocation();
-    }
+    applyLocation((cached && formatLocation(cached)) || fallback);
 
     // 显示弹窗：延迟到首屏加载完成后出现，避免打扰首屏阅读；
     // 此时页面布局已完成，可精确测量导航栏位置（同步测量会拿到
