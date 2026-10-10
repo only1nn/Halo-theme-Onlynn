@@ -253,10 +253,37 @@ if (!window.__navbarPanelToggleBound) {
 
 // 桌面导航在触屏设备上的子菜单展开（与移动/平板抽屉菜单无关）。
 // 断点与 Navbar.astro 的桌面菜单栏一致（lg，≥1024px）：
-// <1024px 时桌面导航栏被 invisible 隐藏，无需此交互，显式跳过避免误判
+// <1024px 时桌面导航栏被 invisible 隐藏，无需此交互，显式跳过避免误判。
+// ⚠ 拦截条件看**产生这次点击的指针类型**，不看 (pointer: coarse)：那个媒体查询说的是
+// 「主指针」，Chromium 对触屏笔记本可能一直报 coarse —— 于是鼠标点一级项也会被拦成
+// 「展开子菜单」而不再跳转（鼠标特效踩的是同一个坑，见 cursor-fx.ts 的 isTouchLike 说明）。
+// 外层只保留「设备可能带触摸」这道门，避免纯桌面上白装一套 capture 监听。
 (function () {
-  if (!window.matchMedia("(pointer: coarse)").matches) return;
+  var mayTouch =
+    window.matchMedia("(any-pointer: coarse)").matches ||
+    window.matchMedia("(pointer: coarse)").matches;
+  if (!mayTouch) return;
   if (window.matchMedia("(max-width: 1023px)").matches) return;
+
+  // click 事件本身不带指针类型，记下最近一次 pointerdown 的来源；
+  // 没有 PointerEvent 的老浏览器按触摸设备处理（保持改动前的行为）
+  var lastPointerType =
+    typeof window.PointerEvent === "function" ? "" : "touch";
+  window.addEventListener(
+    "pointerdown",
+    function (e) {
+      lastPointerType = e.pointerType || "";
+    },
+    { capture: true, passive: true },
+  );
+
+  function fromTouch() {
+    if (lastPointerType) {
+      return lastPointerType === "touch" || lastPointerType === "pen";
+    }
+    // 键盘激活 / 脚本合成点击（没有前置 pointerdown）：退回媒体查询兜底
+    return window.matchMedia("(pointer: coarse)").matches;
+  }
 
   function closeAll() {
     document.querySelectorAll(".group.submenu-open").forEach(function (g) {
@@ -281,6 +308,8 @@ if (!window.__navbarPanelToggleBound) {
         return;
       }
       if (!group.querySelector(":scope > .submenu-panel")) return;
+      // 鼠标/触控板的点击交给链接与 Swup 正常处理（只有触摸/手写笔才当「展开」）
+      if (!fromTouch()) return;
 
       // 拦截：阻止跳转和 Swup 处理
       e.preventDefault();
