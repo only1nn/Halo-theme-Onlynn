@@ -720,6 +720,18 @@ const themeSettingScript = `<script type="application/json" id="theme-config" th
           localStorage.removeItem("cursorStyle");
         }
 
+        // 鼠标特效访客覆盖：同光标，只切 body 类，cursor-fx.js 按类决定启停。
+        // 类名是反的（cursor-fx-off）—— 特效默认开启，只有访客显式关过才挂上；
+        // 少了这一段，访客关掉特效后一刷新就"复活"，与面板里的开关状态对不上
+        if (enable && on(d.visitorCursorFx) && d.cursorFxDefault === "true") {
+          body.classList.toggle(
+            "cursor-fx-off",
+            localStorage.getItem("cursorFx") === "false",
+          );
+        } else {
+          localStorage.removeItem("cursorFx");
+        }
+
         if (enable && on(d.visitorWallpaperSettings)) {
           var waveDefault = d.waveDefault !== "false";
           var waveStored = localStorage.getItem("bannerWave");
