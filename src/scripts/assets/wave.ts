@@ -27,11 +27,20 @@
   }
   // 关闭（含旧版布尔 false）：不启动动画
   if (waveValue === false || waveValue === "disabled") return;
-  // 移动端关闭：触屏设备（pointer: coarse，与 navbar.js 判定一致）隐藏波浪容器并跳过动画
-  if (
-    waveValue === "desktop_only" &&
-    window.matchMedia("(pointer: coarse)").matches
-  ) {
+  // 「桌面端显示」= 只在触摸优先的设备上隐藏。判据用 any-pointer 组合，别用 pointer: coarse：
+  // pointer 描述的是**主指针**，Chromium 对触屏笔记本（Surface 一类）可能一直报 coarse ——
+  // 插着鼠标的桌面用户也会被当成移动端、波浪被藏掉（鼠标特效踩的是同一个坑，
+  // 见 cursor-fx.ts 的 isTouchLike 说明）。有精细指针（鼠标/触控板）就算桌面；
+  // 两者都不认的老浏览器退回 pointer: coarse，保持旧行为。
+  function isTouchOnlyDevice() {
+    var mm = window.matchMedia;
+    if (!mm) return false;
+    if (mm("(any-pointer: fine)").matches) return false; // 有鼠标/触控板 → 桌面
+    return (
+      mm("(any-pointer: coarse)").matches || mm("(pointer: coarse)").matches
+    );
+  }
+  if (waveValue === "desktop_only" && isTouchOnlyDevice()) {
     var waveBox = document.getElementById("wave-container");
     if (waveBox) waveBox.style.display = "none";
     return;
