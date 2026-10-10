@@ -242,7 +242,7 @@ spec:
               key: welcome_enable
               label: 启用
               value: false
-              help: "开启后访客进入网站时显示欢迎弹窗；访客关闭后本次会话不再弹出。IP 定位复用天气小组件配置的腾讯位置服务 Key，在侧边栏设置中点击「天气」小组件,配置 Key 后生效。"
+              help: "开启后访客进入网站时显示欢迎弹窗；访客关闭后本次会话不再弹出。IP 定位复用天气小组件的定位结果（免 Key），启用天气小组件即可生效。"
             - $formkit: select
               name: position
               id: welcome_position
@@ -277,7 +277,7 @@ spec:
               if: "$get(welcome_enable).value"
               label: 定位失败文案
               value: "未知星球"
-              help: "未配置腾讯位置服务 Key 或定位失败时，替换 {location} 的地点文字（请填写地点名词，如：未知星球）。模板为「来自 {location} 的小伙伴」时，将显示「来自未知星球的小伙伴」"
+              help: "拿不到定位（未启用天气小组件、或定位请求还在路上）时，替换 {location} 的地点文字（请填写地点名词，如：未知星球）。模板为「来自 {location} 的小伙伴」时，将显示「来自未知星球的小伙伴」"
     - group: style
       label: 样式设置
       formSchema:
@@ -1396,20 +1396,44 @@ spec:
                   help: "用于计算运行天数，留空则不显示运行天数"
                 - $formkit: text
                   if: "$value.value === 'weather'"
+                  name: city
+                  key: widget_weather_city
+                  preserve: true
+                  label: 固定城市
+                  value: ""
+                  help: "城市名，中英文皆可（如 青岛 / Tokyo）。留空则按访客 IP 自动定位"
+                - $formkit: text
+                  if: "$value.value === 'weather'"
+                  name: adcode
+                  key: widget_weather_adcode
+                  preserve: true
+                  label: 行政区划编码
+                  value: ""
+                  help: "优先级高于「固定城市」，可精确到区县（如 青岛崂山区填 370212）。两项都留空 = 按访客 IP 定位"
+                - $formkit: switch
+                  if: "$value.value === 'weather'"
+                  name: extended
+                  key: widget_weather_extended
+                  preserve: true
+                  label: 显示扩展信息
+                  value: true
+                  help: "展开卡片后显示体感温度、能见度、气压、紫外线、空气质量与日出日落；关闭则只留温度与天气"
+                - $formkit: text
+                  if: "$value.value === 'weather'"
                   name: tencent_key
                   key: widget_weather_tencent_key
                   preserve: true
-                  label: 腾讯位置服务 Key
+                  label: 腾讯位置服务 Key（可选）
                   value: ""
-                  help: "WebService API 类型，免费注册：https://lbs.qq.com/dev/console/application/mine；Key 会在前端页面源码中明文出现，建议在腾讯位置服务控制台配置域名白名单。对【账户额度】下的“天气:天气”和“IP定位”分别进行配额分配，确保“调用量分配”和“并发量分配”满足网站需求。"
+                  help: "留空 = 用免注册免 Key 的聚合接口（按访客 IP 定位，信息最全）。填了则改走腾讯位置服务（Key 会在前端明文出现，建议在控制台配置域名白名单）：天气照常显示，但只有温度 / 天气 / 风 / 湿度 / 气压 / 今日高低温，且「按访客 IP 定位」受该 Key 的每日配额限制，用尽会退回下面的默认城市编码"
                 - $formkit: text
                   if: "$value.value === 'weather'"
                   name: default_city
                   key: widget_weather_default_city
                   preserve: true
-                  label: 默认城市编码
+                  label: 默认城市编码（腾讯 Key 模式）
                   value: "110000"
-                  help: "IP定位失败时的回退城市，填写行政区划编码如 110000（北京）或 310000（上海）"
+                  help: "仅腾讯 Key 模式使用：IP 定位失败 / 配额用尽时的回退城市，填行政区划编码如 110000（北京）。免 Key 模式请用上面的「固定城市 / 行政区划编码」"
                 - $formkit: url
                   if: "$value.value === 'hitokoto'"
                   name: hitokoto_api
@@ -1633,20 +1657,44 @@ spec:
                   help: "用于计算运行天数，留空则不显示运行天数"
                 - $formkit: text
                   if: "$value.value === 'weather'"
+                  name: city
+                  key: right_widget_weather_city
+                  preserve: true
+                  label: 固定城市
+                  value: ""
+                  help: "城市名，中英文皆可（如 青岛 / Tokyo）。留空则按访客 IP 自动定位"
+                - $formkit: text
+                  if: "$value.value === 'weather'"
+                  name: adcode
+                  key: right_widget_weather_adcode
+                  preserve: true
+                  label: 行政区划编码
+                  value: ""
+                  help: "优先级高于「固定城市」，可精确到区县（如 青岛崂山区填 370212）。两项都留空 = 按访客 IP 定位"
+                - $formkit: switch
+                  if: "$value.value === 'weather'"
+                  name: extended
+                  key: right_widget_weather_extended
+                  preserve: true
+                  label: 显示扩展信息
+                  value: true
+                  help: "展开卡片后显示体感温度、能见度、气压、紫外线、空气质量与日出日落；关闭则只留温度与天气"
+                - $formkit: text
+                  if: "$value.value === 'weather'"
                   name: tencent_key
                   key: right_widget_weather_tencent_key
                   preserve: true
-                  label: 腾讯位置服务 Key
+                  label: 腾讯位置服务 Key（可选）
                   value: ""
-                  help: "WebService API 类型，免费注册：https://lbs.qq.com/dev/console/application/mine；Key 会在前端页面源码中明文出现，建议在腾讯位置服务控制台配置域名白名单。对【账户额度】下的“天气:天气”和“IP定位”分别进行配额分配，确保“调用量分配”和“并发量分配”满足网站需求。"
+                  help: "留空 = 用免注册免 Key 的聚合接口（按访客 IP 定位，信息最全）。填了则改走腾讯位置服务（Key 会在前端明文出现，建议在控制台配置域名白名单）：天气照常显示，但只有温度 / 天气 / 风 / 湿度 / 气压 / 今日高低温，且「按访客 IP 定位」受该 Key 的每日配额限制，用尽会退回下面的默认城市编码"
                 - $formkit: text
                   if: "$value.value === 'weather'"
                   name: default_city
                   key: right_widget_weather_default_city
                   preserve: true
-                  label: 默认城市编码
+                  label: 默认城市编码（腾讯 Key 模式）
                   value: "110000"
-                  help: "IP定位失败时的回退城市，填写行政区划编码如 110000（北京）或 310000（上海）"
+                  help: "仅腾讯 Key 模式使用：IP 定位失败 / 配额用尽时的回退城市，填行政区划编码如 110000（北京）。免 Key 模式请用上面的「固定城市 / 行政区划编码」"
                 - $formkit: url
                   if: "$value.value === 'hitokoto'"
                   name: hitokoto_api
