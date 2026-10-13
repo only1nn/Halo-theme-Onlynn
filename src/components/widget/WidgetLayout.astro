@@ -68,10 +68,27 @@ const titleText = nameExpression
   {
     (isCollapsed || hasRuntimeCollapse) && (
       <div class="expand-btn -mb-2 px-4" th:if={collapseCondition}>
-        <button class="btn-plain h-9 w-full rounded-lg" type="button">
+        {/* 更多 / 收起：双向切换。两份文案与图标都服务端渲染（文案走 i18n，
+            JS 只切 hidden），与天气小组件的切换同款 */}
+        <button
+          class="btn-plain h-9 w-full rounded-lg"
+          type="button"
+          aria-expanded="false"
+          aria-controls={id}
+        >
           <div class="-translate-x-2 flex items-center justify-center gap-2 text-(--primary)">
-            <span class="icon-[material-symbols--more-horiz] text-[1.75rem]" />
-            <span th:text="#{common.more}">More</span>
+            <span data-toggle-when="collapsed">
+              <span class="flex items-center gap-2">
+                <span class="icon-[material-symbols--more-horiz] text-[1.75rem]" />
+                <span th:text="#{common.more}">More</span>
+              </span>
+            </span>
+            <span data-toggle-when="expanded" class="hidden">
+              <span class="flex items-center gap-2">
+                <span class="icon-[material-symbols--keyboard-arrow-up-rounded] text-[1.75rem]" />
+                <span th:text="#{common.collapse}">Collapse</span>
+              </span>
+            </span>
           </div>
         </button>
       </div>

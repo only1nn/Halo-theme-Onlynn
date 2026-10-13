@@ -400,31 +400,39 @@ const cellIconClass = "shrink-0 text-base";
         </div>
 
         {
-          /* 收起 / 展开：主题色胶囊，悬浮反白。两种文案与图标都服务端渲染，
-            JS 只切 hidden（文案走 i18n 就不用在前端再维护一份字典） */
+          /* 收起 / 展开：与标签 / 分类小组件的「更多」按钮同款样式（整行 btn-plain +
+            主题色图标文案）。两种文案与图标都服务端渲染，JS 只切 hidden
+            （文案走 i18n 就不用在前端再维护一份字典） */
         }
-        <button
-          type="button"
-          data-weather-toggle
-          aria-expanded="false"
-          class="mx-auto flex w-fit items-center rounded-full border border-(--line-divider) bg-(--btn-regular-bg) px-4 py-1.5 text-xs font-medium text-(--primary) transition hover:bg-(--primary) hover:text-white"
-        >
-          <span data-toggle-when="collapsed">
-            <span class="flex items-center gap-1">
-              <span class="icon-[material-symbols--more-horiz] text-base"
-              ></span>
-              <span th:text="#{common.more}">更多</span>
-            </span>
-          </span>
-          <span data-toggle-when="expanded" class="hidden">
-            <span class="flex items-center gap-1">
-              <span
-                class="icon-[material-symbols--keyboard-arrow-up-rounded] text-base"
-              ></span>
-              <span th:text="#{common.collapse}">收起</span>
-            </span>
-          </span>
-        </button>
+        <div class="mt-1 px-1.5 -mb-2">
+          <button
+            type="button"
+            data-weather-toggle
+            aria-expanded="false"
+            class="btn-plain h-9 w-full rounded-lg"
+          >
+            <div
+              class="-translate-x-2 flex items-center justify-center gap-2 text-(--primary)"
+            >
+              <span data-toggle-when="collapsed">
+                <span class="flex items-center gap-2">
+                  <span
+                    class="icon-[material-symbols--more-horiz] text-[1.75rem]"
+                  ></span>
+                  <span th:text="#{common.more}">更多</span>
+                </span>
+              </span>
+              <span data-toggle-when="expanded" class="hidden">
+                <span class="flex items-center gap-2">
+                  <span
+                    class="icon-[material-symbols--keyboard-arrow-up-rounded] text-[1.75rem]"
+                  ></span>
+                  <span th:text="#{common.collapse}">收起</span>
+                </span>
+              </span>
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   </div>
