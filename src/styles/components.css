@@ -275,12 +275,15 @@ html[data-banner-display="transparent"] #banner-gradient {
   }
 
   /* 媒体层承接虚化。用 filter 而非 backdrop-filter：作用对象是壁纸自身，内容层不受影响；
-   translate 已用于横幅取景（--bannerOffset），不能挪作他用 */
+     translate 已用于横幅取景（--bannerOffset），不能挪作他用。
+     ⚠ filter 与 will-change 只在**真有模糊值**时挂（[data-hero-blur="on"]，由
+     scroll-manager 写）：filter: blur(0px) 也是「非 none」，配合 will-change 会把
+     整块壁纸强制提升成滤镜图层 —— 里面是 <video> 时实测会「播几秒画面冻住、切标签页
+     才恢复」（合成层的视频帧不再更新）。首屏顶部 blur=0，此时彻底摘掉滤镜，
+     视频回到普通图层；滚动到有模糊后再挂上（切换点视觉无差异，因为此时 blur 仍是 0） */
   html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"] #banner,
   html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
     #banner-mobile {
-    filter: blur(var(--hero-wallpaper-blur, 0px));
-    will-change: filter;
     /* 壁纸取景偏移必须归零：基础规则给 #banner 加了 translate-y(--bannerOffset)
      （30vh，用于横幅模式下调整壁纸的纵向取景），而 Hero 里幕布已固定为整屏、
      壁纸要铺满视口，再带着这个偏移就会把壁纸整体下推、上方露出一条页面底色
@@ -294,6 +297,14 @@ html[data-banner-display="transparent"] #banner-gradient {
      切换模式时仍需过渡。Firefly 是把 filter 挂在没有过渡的 img 上，同理 */
     transition-property: translate !important;
     transition-duration: var(--dur-banner, 700ms) !important;
+  }
+
+  html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"][data-hero-blur="on"]
+    #banner,
+  html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"][data-hero-blur="on"]
+    #banner-mobile {
+    filter: blur(var(--hero-wallpaper-blur, 0px));
+    will-change: filter;
   }
 
   /* 标题随滚动渐隐 */
@@ -316,19 +327,33 @@ html[data-banner-display="transparent"] #banner-gradient {
     filter: blur(var(--hero-inner-blur, 8px));
   }
 
-  /* Hero 下波浪整块关掉：Hero 的壁纸是固定整屏背景，波浪没有可贴的「壁纸底边」，
-   留着只会横在内容之上干扰阅读。挂 data 属性而不是 body 类，
-   切换全屏布局时属性即时变化，无需脚本参与 */
+  /* Hero 下的波浪：改为固定定位（v1.3.1 恢复）。
+     Hero 的壁纸是固定整屏背景、没有可贴的「壁纸底边」—— 若让波浪留在文档流里，
+     它会随内容滚走、与壁纸底边脱开（v1.1.0 因此把 Hero 下波浪整块关掉，代价是
+     全屏 Hero 的站点看不到波浪、面板里的开关也一并收起）。正确做法是让它**一并固定**：
+     几何沿用全屏首页那套 top/transform（见下方 #wave-container 规则），只换定位方式，
+     于是它始终贴着壁纸的（固定）底边。再复用标题那条滚动驱动量一起淡出：
+     滚动后内容会盖到第一屏上，而 #main-panel-wrapper 没有底色，
+     不淡出的话波浪会从卡片之间的空隙里透出来。
+     注意 z 序：波浪 z-20 < 内容网格 z-30，所以它永远压不到正文上 */
   html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
+    body.is-home
+    #wave-container {
+    position: fixed !important;
+    opacity: var(--hero-title-opacity, 1);
+  }
+
+  /* Hero + **非首页**：波浪必须整块隐藏（v1.3.1 修回归）。
+     上面那条「一起固定」只对首页成立（is-home 才有 --banner-height-extend 撑出第一屏，
+     波浪才贴着固定壁纸的底边）。内页没有这个基准：波浪会以**文档流位置**横在页面中途
+     （约 25vh 处），滚动时糊在固定壁纸与卡片之间，观感就是「波浪和它的渐变层留在原地
+     不消失、样式崩坏」（站长真机截图）。经典全屏不受影响——那里壁纸本身在文档流里，
+     波浪贴着它的底边、随页面一起滚走是对的 */
+  html[data-banner-display="fullscreen"][data-fullscreen-layout="hero"]
+    body:not(.is-home)
     #wave-container {
     display: none !important;
   }
-
-  /* Hero 下的波浪：改为固定定位。
-   波浪锚定在 banner 底边，而 Hero 的壁纸是固定的 —— 波浪若留在文档流里会随内容
-   滚走、与壁纸底边脱开；所以这里让它一并固定，始终贴着壁纸底边。
-/* （原「Hero 下波浪改固定定位」的规则已删除：Hero 现在整块关掉波浪，
-   见上方 display:none 那条，固定定位那套不会再被命中） */
 
   .card-base {
     @apply overflow-hidden rounded-(--radius-large) bg-(--card-bg) transition;
@@ -689,15 +714,17 @@ html[data-banner-display="transparent"] #banner-gradient {
      非全屏模式由 html:not([data-banner-display=fullscreen]) 隐藏，原 th:if 移除），
      非首页由 body:not(.is-home) 隐藏，避免换页后产生不可见热区 */
   /* 大箭头本体（不加底衬：站长试过圆形底衬后觉得不好看，恢复原样）。
-     浅色壁纸下要立得住，靠两点：白色加深到接近不透明、投影分两层
-     （近处一圈窄而深，用于勾出箭头边缘；外面一层宽而淡，用于在浅底上压出对比） */
+     浅色壁纸下要立得住：纯白填充 + **与横幅标题同款投影**（标题是
+     text-shadow: 0 2px 15px rgba(0,0,0,.5)，见 MainGridLayout 的 #banner-title）。
+     图标是遮罩着色（mask + currentColor），text-shadow 对它无效，只能用
+     filter: drop-shadow 等效表达；外面再补一圈窄而深的投影勾出边缘 */
   #scroll-down-indicator {
     position: absolute;
     z-index: 20;
     bottom: 5rem;
     left: 50%;
     transform: translateX(-50%);
-    color: rgb(255 255 255 / 0.95);
+    color: rgb(255 255 255 / 1);
     cursor: pointer;
     transition: color 0.3s ease;
   }
@@ -714,8 +741,8 @@ html[data-banner-display="transparent"] #banner-gradient {
     font-size: 4.5rem;
     line-height: 1;
     animation: scroll-down-bounce 2s ease-in-out infinite;
-    filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.45))
-      drop-shadow(0 4px 14px rgb(0 0 0 / 0.35));
+    filter: drop-shadow(0 2px 15px rgb(0 0 0 / 0.5))
+      drop-shadow(0 1px 2px rgb(0 0 0 / 0.45));
   }
 
   @media (max-width: 767.98px) {
@@ -820,11 +847,12 @@ html[data-banner-display="transparent"] #banner-gradient {
     height: 100% !important;
   }
 
-  /* 壁纸背景不需要横幅文字/署名/媒体播放按钮 */
+  /* 壁纸背景不需要横幅文字/署名/媒体播放按钮。
+     ⚠ 播放按钮已挪到导航栏（#banner 之外），选择器不能再带 #banner 前缀，
+     否则透明模式下它会留在导航栏里（旧版藏在横幅内、被这条一起隐藏） */
   html[data-banner-display="transparent"] #banner-overlay,
   html[data-banner-display="transparent"] #banner-credit,
-  html[data-banner-display="transparent"] #banner-play-btn,
-  html[data-banner-display="transparent"] #banner-play-btn-mobile {
+  html[data-banner-display="transparent"] #banner-play-btn {
     display: none !important;
   }
 
