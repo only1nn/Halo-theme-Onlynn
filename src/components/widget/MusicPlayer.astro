@@ -56,7 +56,7 @@ const layoutId = `${widgetId}-layout`;
       th:attr="data-server=${#strings.isEmpty(widget.server) ? 'netease' : widget.server},
         data-type=${#strings.isEmpty(widget.type) ? 'playlist' : widget.type},
         data-id=${widget.id},
-        data-api=${#strings.isEmpty(musicApi) ? 'https://api.i-meto.com/meting/api?server=:server&type=:type&id=:id&r=:r' : musicApi},
+        data-api=${#strings.isEmpty(musicApi) ? 'https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r' : musicApi},
         data-volume=${widget.volume == null ? 0.7 : widget.volume},
         data-play-mode=${#strings.isEmpty(widget.play_mode) ? 'list' : widget.play_mode},
         data-show-lyrics=true"
@@ -344,7 +344,7 @@ const layoutId = `${widgetId}-layout`;
       id: widget.dataset.id || "",
       api:
         widget.dataset.api ||
-        "https://api.i-meto.com/meting/api?server=:server&type=:type&id=:id&r=:r",
+        "https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&r=:r",
       volume: Number.parseFloat(widget.dataset.volume || "0.7"),
       playMode: widget.dataset.playMode || "list",
       showLyrics: widget.dataset.showLyrics !== "false",
@@ -367,6 +367,16 @@ const layoutId = `${widgetId}-layout`;
         noCover: t("widget.music.noCover", "无封面"),
       },
     };
+
+    /* 备用 Meting 实例：主接口失败时逐级降级，两级都降 ——
+       ① 拉歌单失败 → 换实例重拉；② 单曲播放地址失败 → 用地址里的平台歌曲 id
+       在备用实例上重建 type=url 重试。公共实例随时可能失效（2026-10 实测：旧默认
+       api.i-meto.com 的播放地址解析整站 404，而歌单元数据照常返回），所以即便站长
+       填了「自定义 Meting API」，这条备用链也保留兜底。 */
+    const FALLBACK_APIS = [
+      "https://api.moeyao.cn/meting/?server=:server&type=:type&id=:id",
+      "https://api.i-meto.com/meting/api?server=:server&type=:type&id=:id&r=:r",
+    ];
 
     const formatTime = (seconds) => {
       if (!seconds || Number.isNaN(seconds)) return "0:00";
@@ -478,6 +488,11 @@ const layoutId = `${widgetId}-layout`;
       playlist: [],
       currentIndex: 0,
       isPlaying: false,
+      // 「这首应该继续播吗」：错误降级重试时据此决定要不要续播（初始只加载不播时为 false）
+      wantPlay: false,
+      // 当前曲目的播放地址候选（主地址 + 备用实例重建地址）与试到的位置
+      urlCandidates: [],
+      urlIndex: 0,
       playMode: cfg.playMode === "random" ? 2 : cfg.playMode === "one" ? 1 : 0,
       volume: Number.isFinite(cfg.volume) ? cfg.volume : 0.7,
       isMuted: false,
@@ -680,6 +695,28 @@ const layoutId = `${widgetId}-layout`;
         .catch(() => renderLyricsUI([], "failed"));
     };
 
+    /* 播放地址候选：主地址 + 用同一首平台歌曲 id 在备用实例上重建的 type=url 地址。
+       「歌单拿得到、播放地址却 404」是最常见的坏法（本次旧默认实例整站如此），
+       于是逐个试到能播为止；全部失败才写「音乐加载失败」。 */
+    const buildUrlCandidates = (track) => {
+      const list = [];
+      if (isValidMetingUrl(track.url)) list.push(track.url);
+      const raw = typeof track.url === "string" ? track.url : "";
+      const mId = raw.match(/[?&]id=([^&#]+)/);
+      const mServer = raw.match(/[?&]server=([^&#]+)/);
+      if (mId && mServer && mId[1] && mId[1] !== "undefined") {
+        FALLBACK_APIS.forEach((template) => {
+          const url = template
+            .replace(":server", mServer[1])
+            .replace(":type", "url")
+            .replace(":id", mId[1])
+            .replace(":r", String(Math.random()));
+          if (list.indexOf(url) === -1) list.push(url);
+        });
+      }
+      return list;
+    };
+
     const loadTrack = (index, autoPlay, skipGuard = 0) => {
       if (index < 0 || index >= state.playlist.length) return;
       state.currentIndex = index;
@@ -689,7 +726,10 @@ const layoutId = `${widgetId}-layout`;
         const next = index + 1 >= state.playlist.length ? 0 : index + 1;
         return loadTrack(next, autoPlay, skipGuard + 1);
       }
-      audio.src = isValidMetingUrl(track.url) ? track.url : "";
+      state.urlCandidates = buildUrlCandidates(track);
+      state.urlIndex = 0;
+      state.wantPlay = Boolean(autoPlay);
+      audio.src = state.urlCandidates[0] || "";
       loadLyrics(track);
       updateTrackUI(track);
       updatePlaylistActiveUI();
@@ -734,11 +774,13 @@ const layoutId = `${widgetId}-layout`;
     const togglePlay = () => {
       if (!state.playlist.length) return;
       if (audio.paused) {
+        state.wantPlay = true;
         audio.play().then(() => {
           state.isPlaying = true;
           updatePlayStateUI(true);
         });
       } else {
+        state.wantPlay = false;
         audio.pause();
         state.isPlaying = false;
         updatePlayStateUI(false);
@@ -753,25 +795,44 @@ const layoutId = `${widgetId}-layout`;
       }
     };
 
-    const fetchMetingData = async () => {
-      const api = cfg.api
+    const buildApiUrl = (template) =>
+      template
         .replace(":server", encodeURIComponent(cfg.server))
         .replace(":type", encodeURIComponent(cfg.type))
         .replace(":id", encodeURIComponent(cfg.id))
         .replace(":r", String(Math.random()));
-      const response = await fetch(
-        api + (api.includes("?") ? "&" : "?") + "_t=" + Date.now(),
-      );
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      if (!Array.isArray(data) || !data.length) return [];
-      return data.map((item) => ({
-        name: item.title || item.name || "Unknown",
-        artist: item.author || item.artist || "Unknown",
-        url: item.url,
-        pic: item.pic || item.cover || "",
-        lrc: item.lrc,
-      }));
+
+    const fetchMetingData = async () => {
+      /* 主接口失败（网络错误 / 非 JSON / 非数组）就换备用实例重拉歌单。
+         任一实例返回了数组（哪怕是空的）就采用它：「歌单为空」是有效结果，
+         该显示「暂无歌曲」，不该继续换实例。 */
+      let lastError = null;
+      for (const template of [cfg.api, ...FALLBACK_APIS]) {
+        const api = buildApiUrl(template);
+        try {
+          const response = await fetch(
+            api + (api.includes("?") ? "&" : "?") + "_t=" + Date.now(),
+          );
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const data = await response.json();
+          if (!Array.isArray(data)) throw new Error("非数组响应");
+          return data.map((item) => ({
+            name: item.title || item.name || "Unknown",
+            artist: item.author || item.artist || "Unknown",
+            url: item.url,
+            pic: item.pic || item.cover || "",
+            lrc: item.lrc,
+          }));
+        } catch (e) {
+          lastError = e;
+          console.warn(
+            "[MusicPlayer] 歌单加载失败，尝试备用接口",
+            template,
+            e && e.message,
+          );
+        }
+      }
+      throw lastError || new Error("所有 Meting 接口均失败");
     };
 
     ui.btnPlay.addEventListener("click", togglePlay);
@@ -909,6 +970,25 @@ const layoutId = `${widgetId}-layout`;
     });
     audio.addEventListener("ended", () => playNext(true));
     audio.addEventListener("error", () => {
+      // 主地址失败 → 换下一个候选（备用实例重建的播放地址）；全部失败才显示错误
+      if (state.urlIndex + 1 < state.urlCandidates.length) {
+        state.urlIndex += 1;
+        console.warn(
+          "[MusicPlayer] 播放地址失败，改用备用地址",
+          state.urlCandidates[state.urlIndex],
+        );
+        audio.src = state.urlCandidates[state.urlIndex];
+        if (state.wantPlay) {
+          audio
+            .play()
+            .then(() => {
+              state.isPlaying = true;
+              updatePlayStateUI(true);
+            })
+            .catch(() => updatePlayStateUI(false));
+        }
+        return;
+      }
       ui.title.textContent = cfg.i18n.error;
       setLoading(false);
     });

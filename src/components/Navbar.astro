@@ -5,8 +5,15 @@ import SiteLogo from "./SiteLogo.astro";
 import DisplaySettings from "./widget/DisplaySettings.svelte";
 import LanguageSwitch from "./widget/LanguageSwitch.svelte";
 import NavMenuPanel from "./widget/NavMenuPanel.astro";
+import { bannerHasVideoExpr } from "../utils/image-suffix";
 
 const className = Astro.props.class;
+
+/* 视频壁纸的播放/暂停按钮（点击与图标由 banner-media.js 接管）。
+   门控两条：Banner 确有视频媒体（桌面或移动任一端 —— 导航栏在 #banner-wrapper
+   之外，拿不到那里的 isVideo 局部变量，故用 bannerHasVideoExpr 自己判），
+   且后台「显示暂停按钮」开关没关（缺省显示）。表达式构建期拼好，th:if 引用。 */
+const playBtnGate = `\${(${bannerHasVideoExpr()}) and (theme.config?.style?.bannerStyle?.showPauseBtn == null or theme.config?.style?.bannerStyle?.showPauseBtn)}`;
 ---
 
 <div id="navbar" class="z-50">
@@ -173,6 +180,21 @@ const className = Astro.props.class;
       >
         <LanguageSwitch client:only="svelte" />
       </span>
+      <!-- 视频壁纸的播放/暂停按钮：放在语言切换之后（站长按参考主题定的位置）。
+           只在「Banner 有视频 + 后台开关开启」时渲染；点击与图标由 banner-media.js
+           接管（隐藏端视频的暂停态、断点切换后的图标同步都在那里） -->
+      <button
+        th:if={playBtnGate}
+        id="banner-play-btn"
+        type="button"
+        th:aria-label="#{banner.pause}"
+        aria-label="Pause wallpaper"
+        th:title="#{banner.pause}"
+        class="btn-plain scale-animation h-11 w-11 rounded-lg active:scale-90"
+      >
+        <span class="icon-[material-symbols--pause-rounded] text-[1.25rem]"
+        ></span>
+      </button>
       <!-- 面板切换不再使用内联 onclick（CSP 友好），由 public/assets/navbar.js 的 document 级事件委托统一处理。
            入口可见性：总开关开启且任一分区可用（主题色相/文章布局/卡片样式/壁纸模式/全屏布局/壁纸设置/透明设置/渐变/轮播/卡片边框/跟随主题/樱花/弹幕/侧栏位置）；总开关关闭则入口隐藏
            新增访客开关时必须同步这里，否则「只有新开关可用」时入口不会出现 -->
