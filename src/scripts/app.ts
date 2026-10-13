@@ -263,11 +263,27 @@ class WidgetLayoutElement extends HTMLElement {
   connectedCallback() {
     if (this.dataset.isCollapsed !== "true") return;
     const id = this.dataset.id;
-    const btn = this.querySelector(".expand-btn");
+    const box = this.querySelector(".expand-btn");
     const wrapper = this.querySelector(`#${id}`);
-    btn?.addEventListener("click", () => {
-      wrapper?.classList.remove("collapsed");
-      btn.classList.add("hidden");
+    if (!box || !wrapper) return;
+    // 防重复绑定：OverlayScrollbars 初始化会把整个页面内容搬进滚动容器
+    // （节点 disconnect → reconnect），自定义元素搬回文档时 connectedCallback
+    // 会再跑一次；旧实现是幂等的 remove/add，绑两次看不出问题，而「更多 / 收起」
+    // 是 toggle，绑两次会互相抵消（点击无反应）。用 dataset 守卫（与天气组件同款）
+    if (box.dataset.bound === "true") return;
+    box.dataset.bound = "true";
+    const button = box.querySelector("button");
+    box.addEventListener("click", () => {
+      // 「更多 / 收起」双向切换：折叠类回到容器上，两份服务端渲染的文案 / 图标
+      // （[data-toggle-when]）按当前状态互斥显示，与天气小组件的切换同款
+      const collapsed = wrapper.classList.toggle("collapsed");
+      box.querySelectorAll<HTMLElement>("[data-toggle-when]").forEach((el) => {
+        el.classList.toggle(
+          "hidden",
+          el.dataset.toggleWhen !== (collapsed ? "collapsed" : "expanded"),
+        );
+      });
+      button?.setAttribute("aria-expanded", String(!collapsed));
     });
   }
 }
