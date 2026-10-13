@@ -223,10 +223,11 @@ import MainGridLayout from "../layouts/MainGridLayout.astro";
     <!-- 朋友圈脚本（I27）：由原 4 个脚本合并（friend-authors/blacklist/group/load-more），
          置于 allItems 作用域内，列表为空时整体不加载（各脚本空列表下均无用）；
          Swup 换页由 SwupScriptsPlugin 重执行，IIFE 内守卫防重复绑定 -->
+    <!-- 装饰 / 页内增强脚本 → async：不阻塞 DOMContentLoaded（首屏渲染与交互不依赖它），v1.3.1 -->
     <script
       th:if="${not #lists.isEmpty(allItems.items)}"
       src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/friends.bundle.js?v=${ASSET_VERSION}`}
-      defer
+      async
       is:inline></script>
   </div>
 </MainGridLayout>

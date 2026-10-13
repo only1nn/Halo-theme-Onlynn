@@ -172,16 +172,8 @@ const {
         loop
         playsinline
         tabindex="-1"></video>
-      <button
-        id="banner-play-btn"
-        th:if="${theme.config?.style?.bannerStyle?.showPauseBtn == null or theme.config?.style?.bannerStyle?.showPauseBtn}"
-        type="button"
-        aria-label="暂停播放"
-        class="absolute bottom-24 right-4 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white/85 transition-colors hover:bg-black/70 active:bg-black/80"
-      >
-        <span class="icon-[material-symbols--pause-rounded] text-[1.25rem]"
-        ></span>
-      </button>
+      <!-- 播放/暂停按钮不在这里：已挪到导航栏（语言切换之后），由 Navbar.astro
+           渲染 + banner-media.js 接管；透明模式下仍由 components.css 隐藏 -->
     </div>
     <div
       id="banner"
@@ -245,16 +237,8 @@ const {
           playsinline
           preload="none"
           tabindex="-1"></video>
-        <button
-          id="banner-play-btn-mobile"
-          th:if="${theme.config?.style?.bannerStyle?.showPauseBtn == null or theme.config?.style?.bannerStyle?.showPauseBtn}"
-          type="button"
-          aria-label="暂停播放"
-          class="absolute bottom-24 right-4 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white/85 transition-colors hover:bg-black/70 active:bg-black/80"
-        >
-          <span class="icon-[material-symbols--pause-rounded] text-[1.25rem]"
-          ></span>
-        </button>
+        <!-- 播放/暂停按钮同样挪到导航栏了（导航栏在移动/平板端也常驻可见），
+             这一份不再渲染，避免同 id 两份按钮 -->
       </div>
       <div
         th:if="${mode == 'carousel'}"
@@ -321,30 +305,13 @@ const {
         </div>
       </div>
 
-      <!-- 副标题首屏文案：解析到这个位置就把第一行填进可见的 span。
-           否则要等 banner 脚本（defer 加载、开局还要再停 500ms）才出现 ——
-           慢网络下副标题会空白一两秒，观感上像是「标题先出来、副标题后出现」。
-           banner-typewriter.ts 会识别这段已渲染的文字，从「第一行已打完」接着往下走，
-           不会清空重打。hidden 状态（沉浸/隐藏横幅文字）下不填，与脚本守卫一致 -->
-      <script is:inline>
-        (function () {
-          var el = document.getElementById("banner-subtitle");
-          var data = document.getElementById("banner-subtitles-data");
-          if (!el || !data) return;
-          var overlay = el.closest("#banner-overlay");
-          if (overlay && overlay.classList.contains("banner-text-hidden"))
-            return;
-          var first = (data.textContent || "")
-            .split(/\r?\n/)
-            .map(function (line) {
-              return line.trim();
-            })
-            .filter(Boolean)[0];
-          if (first && !el.textContent.replace(/\u00A0/g, "").trim()) {
-            el.textContent = first;
-          }
-        })();
-      </script>
+      <!-- 副标题不再做「首屏预填」（v1.3.1 改）：
+           原先这里有一段内联脚本，解析到就位就把第一行整句写进可见的 span，理由是
+           「慢网络下副标题会空白一两秒」。代价是**首屏先看到一整句原文**，等
+           banner-typewriter（defer + 开局 500ms）起来后才清空重打 —— 观感是
+           「先显示文字，加载完才开始打字」（站长实测反馈），参考主题都是留空由打字机
+           从头打第一行。现在副标题保持 &nbsp; 占位（高度不跳），打字机立即从空串开打；
+           #banner-subtitles-data 里的文案仍由服务端渲染（无 JS 时至少标题还在） -->
 
       <!-- 社交链接行：GitHub 带文字标签（主入口），其余为圆形图标按钮。
            每一项填了才渲染；外层 overlay 是 pointer-events-none，这里要收回
