@@ -107,6 +107,35 @@
     }
   }
 
+  /** 容器确实有可见区域（display:none 时 rect 全 0）就直接续跑 */
+  function resumeIfVisible() {
+    var box = document.getElementById("wave-container");
+    if (!box || box.getBoundingClientRect().height <= 0) return;
+    resume();
+  }
+
+  /* 兜底看门狗（与 banner-media.ts 同款思路）。IO 在真机上有两种失手方式：
+     ① 后台标签页里首次回调可能就报「不相交」，一旦 running=false 就再没人唤醒它 ——
+        现象是「波浪不动，切一下标签页才动」（站长实测）；
+     ② 某些浏览器在 display / 布局切换后不再回调，波浪会一直停着。
+     这里每 1.5s 用**几何**复查一次（不看 IO 的缓存判定）：页面可见 + 容器确有可见
+     区域 + 却还没在跑 → 重新起 rAF。开销只有一次 getBoundingClientRect；
+     与「屏幕外暂停」也不冲突（几何同样判定不可见时它不会动） */
+  window.setInterval(function () {
+    if (document.hidden || running) return;
+    var box = document.getElementById("wave-container");
+    if (!box) return;
+    var r = box.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return;
+    var vh = window.innerHeight || 0;
+    if (r.bottom > -100 && r.top < vh + 100) resume();
+  }, 1500);
+
+  /* 切全屏布局 / 壁纸模式后立刻复查：Hero ↔ 经典 会让波浪在「固定 / 文档流」与
+     「显示 / 隐藏」之间切换，别等下一次滚动或看门狗周期 */
+  window.addEventListener("fullscreenLayoutChange", resumeIfVisible);
+  window.addEventListener("bannerModeChange", resumeIfVisible);
+
   requestAnimationFrame(step);
   // 原 swup:contentReplaced 同步监听已删除：Swup v3 事件名，v4 分发
   // swup:{hook}（如 swup:content:replace），该监听从未触发；

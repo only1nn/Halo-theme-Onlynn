@@ -208,6 +208,38 @@ function bannerMobileVars(): string {
 }
 
 /**
+ * 「Banner 是否存在视频媒体」的独立布尔表达式 —— 供 bannerThWith 作用域之外的
+ * 组件做门控（现用于导航栏里的播放/暂停按钮：它在 #banner-wrapper 之外，
+ * 拿不到那里的 isVideo / mobileActive 局部变量）。
+ *
+ * 两端各判一次：桌面是视频，或移动端启用独立来源且移动来源是视频（此时桌面可能是
+ * 图片、视频只出现在移动端，但按钮是共用的，仍须渲染）。
+ */
+export function bannerHasVideoExpr(): string {
+  const isVideo = (urlExpr: string) =>
+    "(" +
+    urlEndsWith(urlExpr, ".mp4") +
+    " or " +
+    urlEndsWith(urlExpr, ".webm") +
+    ")";
+  const desktopSingle =
+    "(theme.config?.style?.bannerStyle?.mode ?: 'single') == 'single'";
+  const mobileSingle =
+    "(theme.config?.style?.bannerStyle?.mobile?.mode ?: 'single') == 'single'";
+  return (
+    "(" +
+    desktopSingle +
+    " and " +
+    isVideo("theme.config?.style?.bannerStyle?.src") +
+    ") or (theme.config?.style?.bannerStyle?.useMobileSrc == true and " +
+    mobileSingle +
+    " and " +
+    isVideo("theme.config?.style?.bannerStyle?.mobile?.src") +
+    ")"
+  );
+}
+
+/**
  * 轮播单张图的 th:with 局部变量串（引用 th:each 循环变量 img）。
  *
  * 每张图的 URL 相关量（去查询串基准 cbase、准入判定 celig）逐张算一次，供该图的
