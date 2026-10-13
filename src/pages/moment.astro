@@ -4,7 +4,6 @@ import MainGridLayout from "../layouts/MainGridLayout.astro";
 const basePath = import.meta.env.BASE_URL.replace(/\/+$/, "");
 // ASSET_VERSION 由 astro.config.mjs 构建期从 theme.yaml 注入（vite.define）
 declare const ASSET_VERSION: string;
-
 ---
 
 <MainGridLayout
@@ -154,54 +153,57 @@ declare const ASSET_VERSION: string;
 
   <!-- 点赞脚本必须写在 Layout 内（= Swup 容器内）：换页进来时由 SwupScriptsPlugin
        重执行、重新绑定按钮（脚本靠 data-upvote-bound 幂等）。写在   <!-- 代码块增强（语言徽章 / 行号 / 长块折叠 / 复制），纯增量、不设门控 -->
-  <script src={`${basePath}/assets/code-block.js?v=${ASSET_VERSION}`} defer is:inline></script>
-
-</MainGridLayout>
-       之后会被产出到 </html> 外面、不在容器内，换页到本页时不会执行 → 点赞点不动 -->
+  <!-- 装饰 / 页内增强脚本 → async：不阻塞 DOMContentLoaded（首屏渲染与交互不依赖它），v1.3.1 -->
   <script
-    src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/upvote.js?v=${ASSET_VERSION}`}
-    defer
+    src={`${basePath}/assets/code-block.js?v=${ASSET_VERSION}`}
+    async
     is:inline></script>
+</MainGridLayout>
+之后会被产出到 外面、不在容器内，换页到本页时不会执行 → 点赞点不动 -->
+<!-- 装饰 / 页内增强脚本 → async：不阻塞 DOMContentLoaded（首屏渲染与交互不依赖它），v1.3.1 -->
+<script
+  src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/upvote.js?v=${ASSET_VERSION}`}
+  async
+  is:inline></script>
 
-  <!-- 同理写在 Layout 内：换页进来时 SwupScriptsPlugin 会重执行，#comment 锚点的
+<!-- 同理写在 Layout 内：换页进来时 SwupScriptsPlugin 会重执行，#comment 锚点的
        偏移补偿与「等评论组件渲染后再滚动」才能生效；写在 Layout 外则换页后失效 -->
-  <script>
-    // 统一处理 #comment 锚点定位（兼容 Halo 评论组件异步渲染）
-    (function () {
-      const NAV_OFFSET = 6 * 16; // 6rem
+<script>
+  // 统一处理 #comment 锚点定位（兼容 Halo 评论组件异步渲染）
+  (function () {
+    const NAV_OFFSET = 6 * 16; // 6rem
 
-      const scrollToComment = () => {
-        const el = document.getElementById("comment");
-        if (!el) return;
-        const top =
-          el.getBoundingClientRect().top + window.pageYOffset - NAV_OFFSET;
-        window.scrollTo({ top, behavior: "smooth" });
-      };
+    const scrollToComment = () => {
+      const el = document.getElementById("comment");
+      if (!el) return;
+      const top =
+        el.getBoundingClientRect().top + window.pageYOffset - NAV_OFFSET;
+      window.scrollTo({ top, behavior: "smooth" });
+    };
 
-      // 从列表页跳转：等 Halo 评论组件渲染完成后重新定位
-      if (window.location.hash === "#comment") {
-        const el = document.getElementById("comment");
-        if (el) {
-          const observer = new MutationObserver(() => {
-            observer.disconnect();
-            scrollToComment();
-          });
-          observer.observe(el, { childList: true, subtree: true });
-          // 兜底：1.5s 后无论如何滚动一次
-          setTimeout(() => {
-            observer.disconnect();
-            scrollToComment();
-          }, 1500);
-        }
-      }
-
-      // 详细页内点击 #comment：阻止默认行为，统一用 scrollToComment
-      document.querySelectorAll('a[href="#comment"]').forEach((a) => {
-        a.addEventListener("click", (e) => {
-          e.preventDefault();
+    // 从列表页跳转：等 Halo 评论组件渲染完成后重新定位
+    if (window.location.hash === "#comment") {
+      const el = document.getElementById("comment");
+      if (el) {
+        const observer = new MutationObserver(() => {
+          observer.disconnect();
           scrollToComment();
         });
+        observer.observe(el, { childList: true, subtree: true });
+        // 兜底：1.5s 后无论如何滚动一次
+        setTimeout(() => {
+          observer.disconnect();
+          scrollToComment();
+        }, 1500);
+      }
+    }
+
+    // 详细页内点击 #comment：阻止默认行为，统一用 scrollToComment
+    document.querySelectorAll('a[href="#comment"]').forEach((a) => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        scrollToComment();
       });
-    })();
-  </script>
-</MainGridLayout>
+    });
+  })();
+</script>
