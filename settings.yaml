@@ -624,7 +624,7 @@ spec:
               if: "$get(banner_mode).value === 'single'"
               label: 显示暂停按钮
               value: true
-              help: "视频模式下在右下角显示播放/暂停按钮；关闭后视频仅自动静音循环播放，无手动控制（移动端同样生效）"
+              help: "视频模式下在导航栏右侧（语言切换之后）显示播放/暂停按钮；关闭后视频仅自动静音循环播放，无手动控制（移动端同样生效）"
             - $formkit: group
               name: carousel
               id: banner_carousel
@@ -1465,6 +1465,7 @@ spec:
                   preserve: true
                   label: 平台
                   value: netease
+                  help: 各平台可用性取决于 Meting 实例（内置默认对网易云最完整；腾讯 / 酷狗 / 百度 多数公共实例已失效）
                   options:
                     - label: 网易云音乐
                       value: netease
@@ -1472,8 +1473,6 @@ spec:
                       value: tencent
                     - label: 酷狗音乐
                       value: kugou
-                    - label: 虾米音乐
-                      value: xiami
                     - label: 百度音乐
                       value: baidu
                 - $formkit: select
@@ -1483,6 +1482,7 @@ spec:
                   preserve: true
                   label: 类型
                   value: playlist
+                  help: 搜索 / 专辑 / 歌手取决于实例支持情况（内置默认对歌曲 / 歌单最完整）
                   options:
                     - label: 歌曲
                       value: song
@@ -1532,7 +1532,7 @@ spec:
                   key: widget_music_api
                   preserve: true
                   label: 自定义 Meting API
-                  help: 留空时使用 MetingJS 默认 API，地址可包含 :server、:type、:id、:r 占位符
+                  help: 留空使用内置默认实例（api.injahow.cn）；主接口失败时会自动降级到内置备用实例。公共实例可能失效，有条件建议自建 Meting。地址可包含 :server、:type、:id、:r 占位符
                 - $formkit: number
                   if: "$value.value === 'schedule'"
                   name: limit
@@ -1726,6 +1726,7 @@ spec:
                   preserve: true
                   label: 平台
                   value: netease
+                  help: 各平台可用性取决于 Meting 实例（内置默认对网易云最完整；腾讯 / 酷狗 / 百度 多数公共实例已失效）
                   options:
                     - label: 网易云音乐
                       value: netease
@@ -1733,8 +1734,6 @@ spec:
                       value: tencent
                     - label: 酷狗音乐
                       value: kugou
-                    - label: 虾米音乐
-                      value: xiami
                     - label: 百度音乐
                       value: baidu
                 - $formkit: select
@@ -1744,6 +1743,7 @@ spec:
                   preserve: true
                   label: 类型
                   value: playlist
+                  help: 搜索 / 专辑 / 歌手取决于实例支持情况（内置默认对歌曲 / 歌单最完整）
                   options:
                     - label: 歌曲
                       value: song
@@ -1793,7 +1793,7 @@ spec:
                   key: right_widget_music_api
                   preserve: true
                   label: 自定义 Meting API
-                  help: 留空时使用 MetingJS 默认 API，地址可包含 :server、:type、:id、:r 占位符
+                  help: 留空使用内置默认实例（api.injahow.cn）；主接口失败时会自动降级到内置备用实例。公共实例可能失效，有条件建议自建 Meting。地址可包含 :server、:type、:id、:r 占位符
                 - $formkit: number
                   if: "$value.value === 'schedule'"
                   name: limit
