@@ -7,7 +7,7 @@
 > 基于 [Fuwari](https://github.com/saicaca/fuwari) 魔改，
 > 按 [Firefly](https://github.com/CuteLeaf/Firefly) 的美学补齐外观与交互定制能力
 >
-> ![Version](https://img.shields.io/badge/version-1.3.0-blue)
+> ![Version](https://img.shields.io/badge/version-1.3.1-blue)
 > ![Halo](https://img.shields.io/badge/Halo-%3E%3D2.25.0-blue)
 > ![Node.js >= 22.12](https://img.shields.io/badge/node.js-%3E%3D22.12-brightgreen)
 > ![pnpm >= 10](https://img.shields.io/badge/pnpm-%3E%3D10-blue)
