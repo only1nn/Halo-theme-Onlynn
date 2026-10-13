@@ -22,7 +22,7 @@
     }
   }
 
-  var TypewriterEffect = function (el, lines, backspace, startTyped) {
+  var TypewriterEffect = function (el, lines, backspace) {
     this.el = el;
     this.lines = lines;
     this.index = 0;
@@ -37,21 +37,13 @@
     // 单行则听后台开关（关闭 = 打完即停，即改造前的行为）
     this.loop = lines.length > 1 || backspace;
 
-    var self = this;
-    if (startTyped) {
-      /* 首行已经在 HTML 里渲染好了（布局里的内联脚本填的）。
-         直接当作「第一行已打完」：to type() 一次，它会因为 charIdx 已到末尾而进入
-         停留 → 回退 → 重打的循环。不动已渲染的文字，首屏就不会先空白一两秒。 */
-      self.charIdx = lines[0].length;
-      self.timeoutId = setTimeout(function () {
-        self.type();
-      }, self.pauseAfterType);
-      return;
-    }
-    self.setText("");
-    self.timeoutId = setTimeout(function () {
-      self.type();
-    }, 500);
+    /* 立即从空串开打（v1.3.1 改）：原先这里要等 500ms 才敲第一个字 ——
+       那 500ms 是留给「解析期预填第一行 + 220ms 二次初始化」那套的余量。
+       现在预填已去掉（见 MainGridLayout 的说明）、二次初始化改成幂等，
+       所以第一个字在脚本执行时就落笔，与参考主题一致：不再出现
+       「先看到整句、加载完才开始打」。 */
+    this.setText("");
+    this.type();
   };
 
   TypewriterEffect.prototype.setText = function (text) {
@@ -117,6 +109,28 @@
     var overlay = el.closest("#banner-overlay");
     if (overlay && overlay.classList.contains("banner-text-hidden")) return;
 
+    var dc = document.getElementById("banner-subtitles-data");
+    if (!dc) return;
+    var raw = dc.textContent.trim();
+    if (!raw) return;
+    var lines = raw
+      .split("\n")
+      .map(function (l) {
+        return l.trim();
+      })
+      .filter(Boolean);
+    if (lines.length === 0) return;
+
+    /* 已在跑、且文案没变 → 直接跳过。v1.3.1 起打字是**立即开始**的，而
+       runInitTW 开局会再初始化一次（220ms 后）、banner:visible 也会触发 ——
+       无脑重建会把已经打出的字清掉重打（肉眼可见地闪一下）。文案变了
+       （后台改了副标题 / 换页后另一套配置）才重建 */
+    if (
+      el.__twInstance &&
+      el.__twInstance.lines.join("\n") === lines.join("\n")
+    )
+      return;
+
     if (el.__twInstance) {
       el.__twInstance.destroy();
       delete el.__twInstance;
@@ -131,30 +145,7 @@
       createCursorBlink(cursor);
     }
 
-    var dc = document.getElementById("banner-subtitles-data");
-    if (!dc) return;
-    var raw = dc.textContent.trim();
-    if (!raw) return;
-    var lines = raw
-      .split("\n")
-      .map(function (l) {
-        return l.trim();
-      })
-      .filter(Boolean);
-    if (lines.length === 0) return;
-
-    /* 内联脚本可能已经把第一行填好了（见 MainGridLayout 里的首屏填充）：
-       那种情况保留现有文字、从「已打完」状态起步；否则照旧清空重打。 */
-    var painted = (el.textContent || "").replace(/\u00A0/g, "").trim();
-    var startTyped = painted !== "" && painted === lines[0];
-    if (!startTyped) el.textContent = "";
-
-    el.__twInstance = new TypewriterEffect(
-      el,
-      lines,
-      backspaceEnabled(),
-      startTyped,
-    );
+    el.__twInstance = new TypewriterEffect(el, lines, backspaceEnabled());
   }
 
   function runInitTW() {
