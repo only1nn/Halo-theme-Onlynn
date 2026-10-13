@@ -1,10 +1,8 @@
----
-
 <!-- 渲染门：后台「樱花特效 → 启用」为 false 时不渲染，连脚本都不下载。
      画布由 sakura.js 自行创建并挂到 body，故此处没有容器 DOM；
-     访客开关走 body.sakura-disabled 类，无需重建 DOM。 -->
+     访客开关走 body.sakura-disabled 类，无需重建 DOM。 --><!-- 装饰 / 页内增强脚本 → async：不阻塞 DOMContentLoaded（首屏渲染与交互不依赖它），v1.3.1 -->
 <script
   th:if="${theme.config?.style?.sakura?.enable == true}"
   src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/sakura.js?v=${ASSET_VERSION}`}
-  defer
+  async
   is:inline></script>
