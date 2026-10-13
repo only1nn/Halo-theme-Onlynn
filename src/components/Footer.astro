@@ -58,10 +58,11 @@ const currentYear = new Date().getFullYear();
   </a>
   <!-- 秒数实时走动需要脚本；关掉该功能时不下载。Footer 在布局里渲染两次
          （移动端 / 桌面端各一份），脚本自身有 window 级幂等守卫，重复引入无副作用 -->
+  <!-- 装饰 / 页内增强脚本 → async：不阻塞 DOMContentLoaded（首屏渲染与交互不依赖它），v1.3.1 -->
   <script
     th:if="${theme.config?.footer?.runningTime?.enable == true and !#strings.isEmpty(theme.config?.footer?.runningTime?.startDate)}"
     src={`${import.meta.env.BASE_URL.replace(/\/+$/, "")}/assets/site-uptime.js?v=${ASSET_VERSION}`}
-    defer
+    async
     is:inline></script>
 
   <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
