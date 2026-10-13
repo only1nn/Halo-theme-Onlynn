@@ -81,6 +81,8 @@ function applyHeroScrollEffects(scrollY: number): void {
       root.style.removeProperty("--hero-title-opacity");
       lastHeroTitleOpacity = 1;
     }
+    // 非 Hero：摘掉「滤镜已挂」标记（媒体层回到普通图层）
+    if (root.dataset.heroBlur === "on") delete root.dataset.heroBlur;
     return;
   }
 
@@ -92,6 +94,12 @@ function applyHeroScrollEffects(scrollY: number): void {
   if (blur !== lastHeroBlur) {
     root.style.setProperty("--hero-wallpaper-blur", blur + "px");
     lastHeroBlur = blur;
+    /* 只在 blur > 0 时把 filter/will-change 挂到媒体层（见 components.css 的说明）：
+       blur=0 时挂的是一个「非 none」的空滤镜，会让壁纸（视频）永久待在强制滤镜
+       图层里 —— 实测表现为视频播几秒后画面冻住、切标签页才恢复。首屏顶部 blur=0，
+       此刻彻底摘掉；滚动产生模糊后再挂上（切换发生在 blur 仍为 0 的边界，视觉无差） */
+    if (blur > 0) root.dataset.heroBlur = "on";
+    else delete root.dataset.heroBlur;
   }
 
   const opacity =

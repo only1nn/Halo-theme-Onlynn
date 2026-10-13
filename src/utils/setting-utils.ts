@@ -536,9 +536,12 @@ export function getStoredFullscreenLayout(): FullscreenLayout {
 export function applyFullscreenLayout(layout: FullscreenLayout): void {
   const root = document.documentElement;
   root.setAttribute("data-fullscreen-layout", layout);
-  // 切换布局时重置 Hero 的滚动驱动量，否则会沿用上一布局残留的虚化/透明度
+  // 切换布局时重置 Hero 的滚动驱动量，否则会沿用上一布局残留的虚化/透明度；
+  // data-hero-blur 是「模糊值 > 0、媒体层已挂 filter」的标记（见 components.css），
+  // 一并清掉：切走 Hero 后壁纸必须回到普通图层（视频待在滤镜图层里会冻帧）
   root.style.removeProperty("--hero-wallpaper-blur");
   root.style.removeProperty("--hero-title-opacity");
+  delete root.dataset.heroBlur;
   window.dispatchEvent(
     new CustomEvent("fullscreenLayoutChange", { detail: layout }),
   );
